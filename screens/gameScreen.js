@@ -39,6 +39,7 @@ let npcTargetHeight = 280;   // 잠실/군인 정도 키로 통일
 let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부
 let stage = 1; // 1 or 2
 
+
 // 창문(window) 영역 (world 좌표 기준) — setup()에서 backgr 크기에 따라 초기값을 설정합니다.
 // (windowRect and debug options were removed per request)
 
@@ -72,6 +73,10 @@ function gameScreenPreload() {
 
   // 두 번째 NPC의 "서 있는" 이미지
   npcStandImgs[1] = loadImage('assets/npcChracter/시청-2 정면 스탠딩.png');
+  // 버튼 이미지 로드
+  stopButton = loadImage('assets/buttons/stop_투명.png');
+  quitButton = loadImage('assets/buttons/quit_투명.png');
+  settingButton = loadImage('assets/buttons/setting_투명.png');
 }
 
 function gameScreenSetup() {
@@ -209,6 +214,29 @@ function gameScreenDraw() {
     image(dialogImg, dX, dY, dW, dH);
   }
 
+  // 우측 상단에 버튼 배치 (배경 위에 렌더링)
+  push();
+  const buttonWidth = 82.2;
+  const buttonHeight = 60;
+  const buttonGap = 20;
+  let buttonX = width - buttonWidth - 10; // 오른쪽 여백 10px
+  const buttonY = 20; // 위쪽 여백 10px
+
+  if (stopButton) {
+    image(stopButton, buttonX, buttonY, buttonWidth, buttonHeight);
+    buttonX -= buttonWidth/2 + buttonGap; // 버튼 간격 적용
+  }
+
+  if (quitButton) {
+    image(quitButton, buttonX, buttonY, buttonWidth, buttonHeight);
+    buttonX -= buttonWidth/2 + buttonGap;
+  }
+
+  if (settingButton) {
+    image(settingButton, buttonX, buttonY, buttonWidth, buttonHeight);
+  }
+  pop();
+
   // (no debug instructions)
 
 }
@@ -338,4 +366,3 @@ function mousePressed() {
     print("복귀 이후 속도:", speed);
   }, 1000); // 1000ms 후에 이 클릭의 +3 효과 제거
 }
-//
