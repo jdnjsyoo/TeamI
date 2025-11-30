@@ -2,6 +2,9 @@ let x = 200;
 let y = 480;          // 바닥에 있을 때 y
 let groundY = 480;    // 캐릭터가 항상 유지할 y
 let speed = 5;
+let baseSpeed = 5;   // 기본 걷기 속도 (mousePressed 복귀용)
+let boostAmount = 3; // 클릭 시 임시 가속량
+let maxBoost = 12;   // 클릭 시 최대 허용 속도
 
 
 let img;        // 플레이어
@@ -38,6 +41,7 @@ let npcTargetHeight = 280;   // 잠실/군인 정도 키로 통일
 
 let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부
 let stage = 1; // 1 or 2
+let _testBtn = null; // sample UI button for debugging visibility
 
 
 // 창문(window) 영역 (world 좌표 기준) — setup()에서 backgr 크기에 따라 초기값을 설정합니다.
@@ -93,6 +97,21 @@ function gameScreenSetup() {
     };
   }
 
+  // 샘플 버튼 추가: canvas 위에 DOM 버튼이 보이는지 확인
+  try {
+    _testBtn = createButton('UI Test');
+    _testBtn.position(12, 12);
+    _testBtn.style('z-index', '1000');
+    _testBtn.style('padding', '8px 12px');
+    _testBtn.mousePressed(() => {
+      // 버튼으로 NPC 2 일어서기 토글
+      isNpc2Standing = !isNpc2Standing;
+    });
+  } catch (e) {
+    // createButton may not be defined if p5.dom is missing; ignore safely
+    console.warn('createButton not available:', e);
+  }
+
   // (windowRect removed; no initialization needed)
 }
 
@@ -106,8 +125,6 @@ function gameScreenDraw() {
   // Stage 1: 창밖 풍경은 화면 좌표로 렌더(월드 변환 이전)
   if (stage === 1) drawOutside();
   handlePlayerMovement();
-
-  x = constrain(x, 0, backgr.width - 350);
   // y는 worldGroundY(=backgr.height - 80)로 고정되어 있으므로 추가 제약은 필요하지 않습니다.
 
   // 전역 스케일 변수 (이미지 확대/축소 비율, 스테이지에 따라 변경)
@@ -115,12 +132,41 @@ function gameScreenDraw() {
   const visibleSeats = 4; // 현재 목표: 화면에 3~4명 보이도록, 여기선 4로 설정
   let stageScale = (stage === 1) ? 1.2 : (width / (visibleSeats * seatSpacing));
   // 약간 덜 확대 (Stage2일 때 살짝 감소)
-  if (stage === 2) stageScale *= 0.92; // slightly less zoom than before
+  if (stage === 2) stageScale *= 0.90; // slightly less zoom (reduce a bit more)
   // clamp to a reasonable range so UI doesn't break
   stageScale = constrain(stageScale, 1.2, 4.0);
 
-  let offsetX = width / 4 + 20;
+  const defaultOffsetX = width / 4 + 20;
+  let offsetX = defaultOffsetX;
+  // 우측에 보이지 않는 간격 확보 (stage 2일 때 적용)
+  const rightGap = 80; // 화면 오른쪽과 캐릭터 사이의 간격(픽셀)
+  if (stage === 2) {
+    // player's screen x = stageScale * (offsetX - 50)
+    // ensure offsetX <= (width - rightGap)/stageScale - playerScale + 50
+    let maxOffsetX = (width - rightGap) / stageScale - playerScale + 50;
+    if (offsetX > maxOffsetX) offsetX = maxOffsetX;
+    if (offsetX < 0) offsetX = 0;
+  }
   let offsetY = height / 4 + 20;
+
+  // ===== calculate x constraint to avoid overlapping the right edge =====
+  if (backgr) {
+    if (stage === 2) {
+      // When the camera reaches the world right edge (scrollX clamped), compute
+      // a conservative maximum for the player's world X so the player's right side
+      // doesn't appear past the canvas right edge when the camera can't follow any further.
+      const rightGap = 80;
+      // When scrollX hits rightmost bound (clamped): scrollX = -backgr.width + width/stageScale
+      // Solve to ensure player's rightmost screen X <= width - rightGap
+      let worldMaxX = backgr.width - width / stageScale + 50 - playerScale + (width - rightGap) / stageScale;
+      // Fallback: keep inside world bounds
+      worldMaxX = constrain(worldMaxX, 0, backgr.width - playerScale);
+      x = constrain(x, 0, worldMaxX);
+    } else {
+      // In Stage 1, keep player inside background area
+      x = constrain(x, 0, backgr.width - playerScale);
+    }
+  }
 
   let scrollX, scrollY;
   if (stage === 2) {
