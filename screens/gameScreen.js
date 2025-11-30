@@ -114,7 +114,17 @@ function gameScreenDraw() {
   // clamp to a reasonable range so UI doesn't break
   stageScale = constrain(stageScale, 1.2, 4.0);
 
-  let offsetX = width / 4 + 20;
+  const defaultOffsetX = width / 4 + 20;
+  let offsetX = defaultOffsetX;
+  // 우측에 보이지 않는 간격 확보 (stage 2일 때 적용)
+  const rightGap = 80; // 화면 오른쪽과 캐릭터 사이의 간격(픽셀)
+  if (stage === 2) {
+    // player's screen x = stageScale * (offsetX - 50)
+    // ensure offsetX <= (width - rightGap)/stageScale - playerScale + 50
+    let maxOffsetX = (width - rightGap) / stageScale - playerScale + 50;
+    if (offsetX > maxOffsetX) offsetX = maxOffsetX;
+    if (offsetX < 0) offsetX = 0;
+  }
   let offsetY = height / 4 + 20;
 
   let scrollX, scrollY;
