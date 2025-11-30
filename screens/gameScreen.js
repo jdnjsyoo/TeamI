@@ -2,6 +2,9 @@ let x = 200;
 let y = 480;          // 바닥에 있을 때 y
 let groundY = 480;    // 캐릭터가 항상 유지할 y
 let speed = 5;
+let baseSpeed = 5;   // 기본 걷기 속도 (mousePressed 복귀용)
+let boostAmount = 3; // 클릭 시 임시 가속량
+let maxBoost = 12;   // 클릭 시 최대 허용 속도
 
 
 let img;        // 플레이어
