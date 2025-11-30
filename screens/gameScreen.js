@@ -101,8 +101,6 @@ function gameScreenDraw() {
   // Stage 1: 창밖 풍경은 화면 좌표로 렌더(월드 변환 이전)
   if (stage === 1) drawOutside();
   handlePlayerMovement();
-
-  x = constrain(x, 0, backgr.width - 350);
   // y는 worldGroundY(=backgr.height - 80)로 고정되어 있으므로 추가 제약은 필요하지 않습니다.
 
   // 전역 스케일 변수 (이미지 확대/축소 비율, 스테이지에 따라 변경)
@@ -126,6 +124,25 @@ function gameScreenDraw() {
     if (offsetX < 0) offsetX = 0;
   }
   let offsetY = height / 4 + 20;
+
+  // ===== calculate x constraint to avoid overlapping the right edge =====
+  if (backgr) {
+    if (stage === 2) {
+      // When the camera reaches the world right edge (scrollX clamped), compute
+      // a conservative maximum for the player's world X so the player's right side
+      // doesn't appear past the canvas right edge when the camera can't follow any further.
+      const rightGap = 80;
+      // When scrollX hits rightmost bound (clamped): scrollX = -backgr.width + width/stageScale
+      // Solve to ensure player's rightmost screen X <= width - rightGap
+      let worldMaxX = backgr.width - width / stageScale + 50 - playerScale + (width - rightGap) / stageScale;
+      // Fallback: keep inside world bounds
+      worldMaxX = constrain(worldMaxX, 0, backgr.width - playerScale);
+      x = constrain(x, 0, worldMaxX);
+    } else {
+      // In Stage 1, keep player inside background area
+      x = constrain(x, 0, backgr.width - playerScale);
+    }
+  }
 
   let scrollX, scrollY;
   if (stage === 2) {
