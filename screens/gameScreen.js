@@ -53,6 +53,8 @@ let stage2StartTime = null;   // stage2에 진입한 시각 (millis 단위)
 let stationImg;
 let isStationImgActive = false;
 
+let highlightedNpcIndex = -1; // 스테이지 2에서 하이라이트될 NPC 인덱스
+
 function gameScreenPreload() {
   // 지하철 내부
   backgr = loadImage('assets/subwayBackground/낮(임산부석O) 창문 투명 - 대화창X.png');
@@ -112,6 +114,23 @@ function gameScreenDraw() {
   if (stage === 1) drawOutside();
   handlePlayerMovement();
 
+        // stage 2에서 플레이어 위치에 따라 NPC 하이라이트
+        highlightedNpcIndex = -1; // 매 프레임 초기화
+        if (stage === 2) {
+          const firstNpcX = startX; // npcPositions[0].x와 동일
+          const sectionWidth = seatSpacing;
+          const rangeStart = firstNpcX - sectionWidth / 2 - 115;
+  
+          // 플레이어의 x 좌표가 전체 NPC 구간 내에 있는지 확인
+          const numNpcs = 7;
+          const rangeEnd = rangeStart + sectionWidth * numNpcs;
+  
+          if (x >= rangeStart && x < rangeEnd) {
+            const relativeX = x - rangeStart;
+            const index = Math.floor(relativeX / sectionWidth);
+            highlightedNpcIndex = constrain(index, 0, numNpcs - 1);
+          }
+        }
   x = constrain(x, 0, backgr.width - 350);
 
   // 전역 스케일 변수
@@ -164,7 +183,8 @@ function gameScreenDraw() {
       imgToDraw = npcStandImgs[1];
     }
 
-    drawNPC(imgToDraw, npcPositions[i].x, npcBottomWorldY, i);
+    const isHighlighted = (i === highlightedNpcIndex);
+    drawNPC(imgToDraw, npcPositions[i].x, npcBottomWorldY, i, isHighlighted);
   }
 
   // ⭐ 플레이어 그리기 (Y축 아래로 평행이동만 추가)
@@ -242,7 +262,7 @@ function gameScreenDraw() {
 
     // ======= stage2 진입 후 3초가 지나면 강남역 도착 + stage1으로 전환 =======
   if (stage === 2 && stage2StartTime !== null && !isStationImgActive) {
-    if (millis() - stage2StartTime >= 3000) {
+    if (millis() - stage2StartTime >= 10000) {
       isStationImgActive = true;  // drawOutside가 강남역 이미지만 그리게 됨
       stage = 1;                  // 카메라 모드도 stage1으로 복귀
       stage2StartTime = null;     // 한 번만 실행되도록 리셋
@@ -316,7 +336,7 @@ function drawOutside() {
 // =======================
 // NPC 렌더 (비율 통일)
 // =======================
-function drawNPC(npcImg, baseX, baseY, index) {
+function drawNPC(npcImg, baseX, baseY, index, isHighlighted) {
   if (!npcImg) return;
 
   let targetHeight = npcTargetHeight;
@@ -339,8 +359,65 @@ function drawNPC(npcImg, baseX, baseY, index) {
     drawY += standingNpcYShift;
   }
 
-  image(npcImg, drawX, drawY, w, h);
-}
+  // 하이라이트 효과 (캐릭터 외곽선)
+
+  if (isHighlighted) {
+
+    // 가장 안정적인 방법: drawingContext를 사용하여 흰색 실루엣 생성
+
+    let buffer = createGraphics(w, h);
+
+    buffer.image(npcImg, 0, 0, w, h);
+
+    
+
+    // 'source-in' composite operation을 사용하여 기존 픽셀 위에만 색칠
+
+    buffer.drawingContext.globalCompositeOperation = 'source-in';
+
+    
+
+    // 흰색으로 채우기
+
+    buffer.fill(255);
+
+    buffer.noStroke();
+
+    buffer.rect(0, 0, w, h);
+
+    
+
+    // composite operation 리셋 (p5.js의 다른 그리기에 영향 없도록)
+
+    buffer.drawingContext.globalCompositeOperation = 'source-over';
+
+
+
+    const borderPx = 3;
+
+
+
+    // 흰색 실루엣을 상하좌우로 그려 테두리 효과를 냄
+
+    image(buffer, drawX - borderPx, drawY, w, h);
+
+    image(buffer, drawX + borderPx, drawY, w, h);
+
+    image(buffer, drawX, drawY - borderPx, w, h);
+
+    image(buffer, drawX, drawY + borderPx, w, h);
+
+    
+
+    buffer.remove(); // 메모리 누수 방지를 위해 버퍼 제거
+
+  }
+
+
+
+  // 원본 이미지를 위에 다시 그립니다.
+
+  image(npcImg, drawX, drawY, w, h);}
 
 // =======================
 // 키 입력
