@@ -38,6 +38,7 @@ let npcTargetHeight = 280;   // 잠실/군인 정도 키로 통일
 
 let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부
 let stage = 1; // 1 or 2
+let _testBtn = null; // sample UI button for debugging visibility
 
 // 창문(window) 영역 (world 좌표 기준) — setup()에서 backgr 크기에 따라 초기값을 설정합니다.
 // (windowRect and debug options were removed per request)
@@ -88,6 +89,21 @@ function gameScreenSetup() {
     };
   }
 
+  // 샘플 버튼 추가: canvas 위에 DOM 버튼이 보이는지 확인
+  try {
+    _testBtn = createButton('UI Test');
+    _testBtn.position(12, 12);
+    _testBtn.style('z-index', '1000');
+    _testBtn.style('padding', '8px 12px');
+    _testBtn.mousePressed(() => {
+      // 버튼으로 NPC 2 일어서기 토글
+      isNpc2Standing = !isNpc2Standing;
+    });
+  } catch (e) {
+    // createButton may not be defined if p5.dom is missing; ignore safely
+    console.warn('createButton not available:', e);
+  }
+
   // (windowRect removed; no initialization needed)
 }
 
@@ -108,7 +124,7 @@ function gameScreenDraw() {
   const visibleSeats = 4; // 현재 목표: 화면에 3~4명 보이도록, 여기선 4로 설정
   let stageScale = (stage === 1) ? 1.2 : (width / (visibleSeats * seatSpacing));
   // 약간 덜 확대 (Stage2일 때 살짝 감소)
-  if (stage === 2) stageScale *= 0.92; // slightly less zoom than before
+  if (stage === 2) stageScale *= 0.90; // slightly less zoom (reduce a bit more)
   // clamp to a reasonable range so UI doesn't break
   stageScale = constrain(stageScale, 1.2, 4.0);
 
