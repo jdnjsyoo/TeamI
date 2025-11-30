@@ -30,9 +30,17 @@ let cloudSpeed = 1;  // 구름은 훨씬 느리게
 let npcImgs = [];
 let npcStandImgs = [];        // 서 있는 버전 이미지 (2번째 NPC용)
 let npcPositions = [];
+// 좌석 배치용 전역 값
+let seatBaseY = 520;
+let startX = 230;
+let seatSpacing = 95;
 let npcTargetHeight = 280;   // 잠실/군인 정도 키로 통일
 
 let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부
+let stage = 1; // 1 or 2
+
+// 창문(window) 영역 (world 좌표 기준) — setup()에서 backgr 크기에 따라 초기값을 설정합니다.
+// (windowRect and debug options were removed per request)
 
 // ⭐ 추가: 발을 더 아래로 내리기 위한 Y 오프셋
 const playerYShift = 25;        // 유저 캐릭터를 화면에서 더 아래로
@@ -44,9 +52,9 @@ function preload() {
   // 대화창 이미지
   dialogImg = loadImage('assets/subwayBackground/대화창.png');
 
-    // 창밖 풍경
-    cityImg  = loadImage('assets/scenery/시청1.png');
-    cloudImg = loadImage('assets/scenery/구름.png');
+  // 창밖 풍경
+  cityImg  = loadImage('assets/scenery/시청1.png');
+  cloudImg = loadImage('assets/scenery/구름.png');
 
   // 플레이어
   img = loadImage('assets/userCharacter/유저-1 걷는 옆모습 모션 (1).png');
@@ -67,12 +75,11 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(600, 400);
+  // 고정 캔버스 사이즈 (요청대로)
+  createCanvas(1024, 869);
 
   // 좌석 위치 설정
-  let seatBaseY = 520;
-  let startX = 230;
-  let seatSpacing = 95;
+  // note: seatBaseY/startX/seatSpacing are declared globally now
 
   for (let i = 0; i < 7; i++) {
     npcPositions[i] = {
@@ -80,46 +87,79 @@ function setup() {
       y: seatBaseY
     };
   }
+
+  // (windowRect removed; no initialization needed)
 }
 
 function draw() {
   background(0);
 
-  // 플레이어는 항상 groundY
-  y = groundY;
+  // 플레이어는 배경(world) 기준 바닥에 고정
+  // (worldGroundY을 사용해 배경과 동일한 Y로 고정하여 번역/스케일에 따라 함께 이동시키기 위함)
+  y = backgr ? backgr.height - 80 : groundY;
 
-  drawOutside();
+  // Stage 1: 창밖 풍경은 화면 좌표로 렌더(월드 변환 이전)
+  if (stage === 1) drawOutside();
   handlePlayerMovement();
 
   x = constrain(x, 0, backgr.width - 350);
-  y = constrain(y, 0, backgr.height - 350);
+  // y는 worldGroundY(=backgr.height - 80)로 고정되어 있으므로 추가 제약은 필요하지 않습니다.
+
+  // 전역 스케일 변수 (이미지 확대/축소 비율, 스테이지에 따라 변경)
+  // Stage 2 scale computed to show approximately `visibleSeats` seats in the view
+  const visibleSeats = 4; // 현재 목표: 화면에 3~4명 보이도록, 여기선 4로 설정
+  let stageScale = (stage === 1) ? 1.2 : (width / (visibleSeats * seatSpacing));
+  // 약간 덜 확대 (Stage2일 때 살짝 감소)
+  if (stage === 2) stageScale *= 0.92; // slightly less zoom than before
+  // clamp to a reasonable range so UI doesn't break
+  stageScale = constrain(stageScale, 1.2, 4.0);
 
   let offsetX = width / 4 + 20;
   let offsetY = height / 4 + 20;
 
-  let scrollX = -x + offsetX;
-  let scrollY = -y + offsetY;
+  let scrollX, scrollY;
+  if (stage === 2) {
+    // Stage 2: camera follows player
+    scrollX = -x + offsetX;
+    scrollY = -y + offsetY;
+  } else {
+    // Stage 1: camera fixed to leftmost position (user at leftmost)
+    scrollX = -0 + offsetX;
+    scrollY = -y + offsetY; // keep vertical consistent
+  }
 
-  scrollX = constrain(scrollX, -backgr.width + width, 0);
-  scrollY = constrain(scrollY, -backgr.height + height, 0);
+  // 카메라 스크롤 제한을 stageScale을 고려해 계산합니다 (world 좌표 기준).
+  scrollX = constrain(scrollX, -backgr.width + width / stageScale, 0);
+  scrollY = constrain(scrollY, -backgr.height + height / stageScale, 0);
 
-  let npcBottomWorldY = height - scrollY;
+  // ======= 화면 최상단 빈 공간 제거 (world y shift) =======
+  // 배경 이미지의 화면 상단 위치(스크린 좌표)를 계산하고,
+  // 그 값이 양수인 경우(빈 공간이 생긴 경우) 같은 양만큼 world를 위로 평행이동합니다.
+  // translate에 적용되는 값은 scale 전에 호출되므로, 최종 스크린 Y를 계산할 때는 scale을 고려합니다.
+  let topScreenY = (scrollY - 50) * stageScale; // 배경의 화면 상단 Y 좌표
+  let worldShiftY = 0; // world 좌표에서 추가로 더해줄 Y 평행 이동값
+  if (topScreenY > 0) {
+    // topScreenY 만큼 위로 이동하면 top이 0에 맞춰집니다. translate에서 쓰는 값은 world 좌표이므로
+    // worldShiftY는 topScreenY/stageScale의 음수값으로 설정해야 합니다.
+    worldShiftY = -topScreenY / stageScale;
+  }
+
+  // NPC들과 플레이어의 bottom Y 좌표를 background 기준으로 설정하여
+  // 백그라운드가 위로 평행이동한 만큼 모든 캐릭터도 같은 양만큼 위로 이동하게 합니다.
+  const worldGroundY = backgr ? backgr.height - 80 : height - 50;
+  let npcBottomWorldY = worldGroundY;
 
   push();
-  scale(1.2)
-  translate(scrollX-50, scrollY-50);
-
+  scale(stageScale);
+  // Stage 2 Y offset: push all assets (except dialog) down by this value in world coordinates
+  const stage2YOffset = (stage === 2) ? 100 : 0; // slightly lower Stage 2 assets by 100px
+  translate(scrollX - 50, scrollY - 50 + worldShiftY + stage2YOffset);
+  // Stage 2: 창밖 풍경은 월드 변환 내에서 렌더(스크롤/스케일에 따라 움직임)
+  if (stage === 2) drawOutside();
 
   image(backgr, 0, 0, backgr.width, backgr.height);
-  // backgr 바로 아래에 대화창 이미지 배치
-  if (dialogImg) {
-    // 대화창을 캔버스 하단 중앙에 배치 (예시)
-    let dialogWidth = dialogImg.width;
-    let dialogHeight = dialogImg.height;
-    let dialogX = (backgr.width - dialogWidth) / 2;
-    let dialogY = backgr.height - dialogHeight - 30; // 하단에서 30px 위
-    image(dialogImg, dialogX, dialogY);
-  }
+  // (주의) 대화창은 화면 고정 UI로 하단에 고정하여 표시하므로
+  // world transform 내부에서는 렌더하지 않습니다. 대신 아래에서 화면 좌표로 렌더합니다.
 
   // NPC 그리기
   for (let i = 0; i < npcImgs.length; i++) {
@@ -154,7 +194,23 @@ function draw() {
   }
   pop();
 
+  // (대화창을 이후에 화면 좌표로 렌더링하도록 이동)
+
   pop();
+
+  // ======= 화면 하단 고정 대화창 렌더링 (world transform 바깥 => 화면 고정 UI) =======
+  if (dialogImg) {
+    // 대화창은 확대하지 않음 (원본 크기 유지)
+    let dW = dialogImg.width;
+    let dH = dialogImg.height;
+    // 화면 최하단 고정: y값은 캔버스 하단에 딱 붙게 한다.
+    let dX = (width - dW) / 2;          // 가로 중앙 정렬
+    let dY = height - dH;               // 화면 가장 하단에 위치
+    image(dialogImg, dX, dY, dW, dH);
+  }
+
+  // (no debug instructions)
+
 }
 
 function handlePlayerMovement() {
@@ -178,6 +234,13 @@ function handlePlayerMovement() {
 }
 
 function drawOutside() {
+  // inWorld: whether to render this inside the world transform
+  //    - if true, use backgr.width and render relative to background coordinates
+  //    - if false or undefined, render relative to the screen size (legacy behavior)
+  // 전체 Y 오프셋: 바깥 풍경과 구름을 화면 아래로 옮기려면 값을 변경하세요.
+  // 바깥 풍경 Y 오프셋 — 이전에 451로 내려놓았으므로, 절반 정도(올려서 226)로 조정했습니다.
+  const outsideYOffset = 250; // 변경: 조금 더 위로 올리기 (300 -> 250)
+
   if (cityImg) {
     let sScale = 0.55;
     let sw = cityImg.width * sScale;
@@ -186,9 +249,10 @@ function drawOutside() {
     cityX -= citySpeed;
     if (cityX <= -sw) cityX += sw;
 
-    for (let xx = cityX; xx < width; xx += sw) {
-      image(cityImg, xx, 0, sw, sh);
-    }
+    const maxX = (stage === 2 && backgr) ? backgr.width : width;
+      for (let xx = cityX; xx < maxX; xx += sw) {
+        image(cityImg, xx, outsideYOffset, sw, sh);
+      }
   }
 
   if (cloudImg) {
@@ -199,8 +263,9 @@ function drawOutside() {
     cloudX -= cloudSpeed;
     if (cloudX <= -cw) cloudX += cw;
 
-    for (let xx = cloudX; xx < width; xx += cw) {
-      image(cloudImg, xx, -40, cw, ch);
+    const maxX = (stage === 2 && backgr) ? backgr.width : width;
+    for (let xx = cloudX; xx < maxX; xx += cw) {
+      image(cloudImg, xx, -40 + outsideYOffset, cw, ch);
     }
   }
 }
@@ -243,7 +308,14 @@ function drawNPC(npcImg, baseX, baseY, index) {
 // 스페이스바 누르면 2번 NPC 서기
 // =======================
 function keyPressed() {
+  // Spacebar toggles stage
   if (key === ' ' || keyCode === 32) {
+    stage = (stage === 1) ? 2 : 1;
+    return; // avoid treating as other keys
+  }
+
+  // 'n' 키로 2번 NPC 일어나게 (기존 space 역할 변화 보완)
+  if (key === 'n' || key === 'N') {
     isNpc2Standing = true;
   }
 }
