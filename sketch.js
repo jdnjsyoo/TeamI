@@ -25,7 +25,7 @@ function switchToQuitScreen() {
 }
 
 function switchToSettingsScreen() {
-  applyScreen("settings");
+  applyScreen("settingsScreen");
   if (typeof setup === "function") {
     setup();
   }
