@@ -3,7 +3,12 @@ let y = 480;          // 바닥에 있을 때 y
 let groundY = 480;    // 캐릭터가 항상 유지할 y
 let speed = 5;
 
+
 let img;        // 플레이어
+let imgFront;   // 정면
+let imgBack;  // 뒷모습
+let playerDir = "right";
+
 let playerScale = 300; // ⭐ 유저 NPC 크기
 
 let backgr;     // 지하철 내부(창문 투명)
@@ -25,7 +30,7 @@ let cloudSpeed = 1;  // 구름은 훨씬 느리게
 let npcImgs = [];
 let npcStandImgs = [];        // 서 있는 버전 이미지 (2번째 NPC용)
 let npcPositions = [];
-let npcTargetHeight = 220;   // 잠실/군인 정도 키로 통일
+let npcTargetHeight = 280;   // 잠실/군인 정도 키로 통일
 
 let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부
 
@@ -45,6 +50,8 @@ function preload() {
 
   // 플레이어
   img = loadImage('assets/userCharacter/유저-1 걷는 옆모습 모션 (1).png');
+  imgFront = loadImage('assets/userCharacter/유저-1 정면 스탠딩.png');
+  imgBack  = loadImage('assets/userCharacter/유저-1 뒷모습.png')
 
   // NPC 7명 로드 — 첫 번째 NPC 교체됨!
   npcImgs[0] = loadImage('assets/npcChracter/홍대-1 기본 착석.png');        // ⭐ 교체된 1번 NPC
@@ -99,7 +106,8 @@ function draw() {
   let npcBottomWorldY = height - scrollY;
 
   push();
-  translate(scrollX, scrollY);
+  scale(1.2)
+  translate(scrollX-50, scrollY-50);
 
 
   image(backgr, 0, 0, backgr.width, backgr.height);
@@ -129,12 +137,20 @@ function draw() {
   let playerTopY    = playerBottomY - playerScale;
 
   push();
-  if (facingLeft) {
-    translate(x + playerScale, playerTopY + playerYShift);
-    scale(-1, 1);
-    image(img, 0, 0, playerScale, playerScale);
-  } else {
-    image(img, x, playerTopY + playerYShift, playerScale, playerScale);
+  if (playerDir === "left") {
+  // 왼쪽: 옆모습 뒤집기
+  translate(x + playerScale, playerTopY + playerYShift);
+  scale(-1, 1);
+  image(img, 0, 0, playerScale, playerScale);
+  } else if (playerDir === "right") {
+  // 오른쪽: 옆모습 그대로
+  image(img, x, playerTopY + playerYShift, playerScale, playerScale);
+  } else if (playerDir === "front") {
+  // 정면
+  image(imgBack, x, playerTopY + playerYShift, playerScale, playerScale);
+  } else if (playerDir === "back") {
+  // 뒷모습
+  image(imgFront, x, playerTopY + playerYShift, playerScale, playerScale);
   }
   pop();
 
@@ -142,13 +158,22 @@ function draw() {
 }
 
 function handlePlayerMovement() {
-  if (keyIsDown(LEFT_ARROW)) {
+   if (keyIsDown(LEFT_ARROW)) {
     x -= speed;
-    facingLeft = true;
+    playerDir = "left";
   }
-  if (keyIsDown(RIGHT_ARROW)) {
+  // → 오른쪽
+  else if (keyIsDown(RIGHT_ARROW)) {
     x += speed;
-    facingLeft = false;
+    playerDir = "right";
+  }
+  // ↑ 정면
+  else if (keyIsDown(UP_ARROW)) {
+    playerDir = "front";
+  }
+  // ↓ 뒷모습
+  else if (keyIsDown(DOWN_ARROW)) {
+    playerDir = "back";
   }
 }
 
@@ -204,7 +229,7 @@ function drawNPC(npcImg, baseX, baseY, index) {
   let h = targetHeight;
 
   let drawX = baseX - w / 2;
-  let drawY = baseY - h - lift;
+  let drawY = baseY - h ;
 
   // ⭐ 서 있는 2번 NPC만 더 아래로 평행이동
   if (isStandingNpc2) {
@@ -222,3 +247,23 @@ function keyPressed() {
     isNpc2Standing = true;
   }
 }
+
+// 클릭 시 속도 증가
+function mousePressed() {
+  // 1) 즉시 속도 올리기
+  speed += boostAmount;
+  if (speed > maxBoost) speed = maxBoost;
+
+  print("현재 속도:", speed);
+
+  // 2) 이 클릭에 해당하는 효과를 1초 뒤에 제거
+  setTimeout(() => {
+    speed -= boostAmount;
+
+    // 기본 속도보다 내려가지 않도록
+    if (speed < baseSpeed) speed = baseSpeed;
+
+    print("복귀 이후 속도:", speed);
+  }, 1000); // 1000ms 후에 이 클릭의 +3 효과 제거
+}
+//
