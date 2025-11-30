@@ -3,9 +3,10 @@ let y = 480;          // 바닥에 있을 때 y
 let groundY = 480;    // 캐릭터가 항상 유지할 y
 let speed = 5;
 
+
 let img;        // 플레이어
 let imgFront;   // 정면
-let imgBack;    // 뒷모습
+let imgBack;  // 뒷모습
 let playerDir = "right";
 
 let playerScale = 300; // ⭐ 유저 NPC 크기
@@ -45,14 +46,6 @@ let stage = 1; // 1 or 2
 const playerYShift = 25;        // 유저 캐릭터를 화면에서 더 아래로
 const standingNpcYShift = 25;   // 서 있는 2번 NPC도 같은 만큼 아래로
 
-// ⭐ 버튼 히트박스(화면 좌표 기준) 저장용 전역 변수
-let stopBtnX, stopBtnY, stopBtnW, stopBtnH;
-let quitBtnX, quitBtnY, quitBtnW, quitBtnH;
-let settingBtnX, settingBtnY, settingBtnW, settingBtnH;
-
-// 버튼 이미지 전역 (이미 쓰고 있던 애들)
-let stopButton, quitButton, settingButton;
-
 function gameScreenPreload() {
   // 지하철 내부
   backgr = loadImage('assets/subwayBackground/낮(임산부석O) 창문 투명 - 대화창X.png');
@@ -79,11 +72,6 @@ function gameScreenPreload() {
 
   // 두 번째 NPC의 "서 있는" 이미지
   npcStandImgs[1] = loadImage('assets/npcChracter/시청-2 정면 스탠딩.png');
-
-  // 버튼 이미지 로드
-  stopButton = loadImage('assets/buttons/stop_투명.png');
-  quitButton = loadImage('assets/buttons/quit_투명.png');
-  settingButton = loadImage('assets/buttons/setting_투명.png');
 }
 
 function gameScreenSetup() {
@@ -162,21 +150,6 @@ function gameScreenDraw() {
   let npcBottomWorldY = worldGroundY;
 
   push();
-  const worldScale = 1.2;
-  scale(worldScale);
-  const transX = scrollX - 50;
-  const transY = scrollY - 50;
-  translate(transX, transY);
-
-  image(backgr, 0, 0, backgr.width, backgr.height);
-  // backgr 바로 아래에 대화창 이미지 배치
-  if (dialogImg) {
-    let dialogWidth = dialogImg.width;
-    let dialogHeight = dialogImg.height;
-    let dialogX = (backgr.width - dialogWidth) / 2;
-    let dialogY = backgr.height - dialogHeight - 30; // 하단에서 30px 위
-    image(dialogImg, dialogX, dialogY);
-  }
   scale(stageScale);
   // Stage 2 Y offset: push all assets (except dialog) down by this value in world coordinates
   const stage2YOffset = (stage === 2) ? 100 : 0; // slightly lower Stage 2 assets by 100px
@@ -205,67 +178,22 @@ function gameScreenDraw() {
 
   push();
   if (playerDir === "left") {
-    // 왼쪽: 옆모습 뒤집기
-    translate(x + playerScale, playerTopY + playerYShift);
-    scale(-1, 1);
-    image(img, 0, 0, playerScale, playerScale);
+  // 왼쪽: 옆모습 뒤집기
+  translate(x + playerScale, playerTopY + playerYShift);
+  scale(-1, 1);
+  image(img, 0, 0, playerScale, playerScale);
   } else if (playerDir === "right") {
-    // 오른쪽: 옆모습 그대로
-    image(img, x, playerTopY + playerYShift, playerScale, playerScale);
+  // 오른쪽: 옆모습 그대로
+  image(img, x, playerTopY + playerYShift, playerScale, playerScale);
   } else if (playerDir === "front") {
-    // 정면
-    image(imgBack, x, playerTopY + playerYShift, playerScale, playerScale);
+  // 정면
+  image(imgBack, x, playerTopY + playerYShift, playerScale, playerScale);
   } else if (playerDir === "back") {
-    // 뒷모습
-    image(imgFront, x, playerTopY + playerYShift, playerScale, playerScale);
+  // 뒷모습
+  image(imgFront, x, playerTopY + playerYShift, playerScale, playerScale);
   }
   pop();
 
-  // 우측 상단에 버튼 배치 (월드 좌표 기준)
-  const buttonWidth = 82.2;
-  const buttonHeight = 60;
-  let buttonX = width - (buttonWidth * 4); // 버튼 3개와 간격 포함한 시작점
-  const buttonY = 20; // 위쪽 여백 20px
-
-  // 월드→스크린 좌표 변환용 (scale + translate 적용 반영)
-  const toScreenX = (wx) => (wx + transX) * worldScale;
-  const toScreenY = (wy) => (wy + transY) * worldScale;
-  const toScreenW = (w)  => w * worldScale;
-  const toScreenH = (h)  => h * worldScale;
-
-  if (stopButton) {
-    image(stopButton, buttonX, buttonY, buttonWidth, buttonHeight);
-
-    // 화면 좌표계 기준 히트박스 저장
-    stopBtnX = toScreenX(buttonX);
-    stopBtnY = toScreenY(buttonY);
-    stopBtnW = toScreenW(buttonWidth);
-    stopBtnH = toScreenH(buttonHeight);
-
-    buttonX += buttonWidth / 2 + 20; // 버튼 간격
-  }
-
-  if (quitButton) {
-    image(quitButton, buttonX, buttonY, buttonWidth, buttonHeight);
-
-    quitBtnX = toScreenX(buttonX);
-    quitBtnY = toScreenY(buttonY);
-    quitBtnW = toScreenW(buttonWidth);
-    quitBtnH = toScreenH(buttonHeight);
-
-    buttonX += buttonWidth / 2 + 20;
-  }
-
-  if (settingButton) {
-    image(settingButton, buttonX, buttonY, buttonWidth, buttonHeight);
-
-    settingBtnX = toScreenX(buttonX);
-    settingBtnY = toScreenY(buttonY);
-    settingBtnW = toScreenW(buttonWidth);
-    settingBtnH = toScreenH(buttonHeight);
-  }
-
-  pop(); // push() 종료
   // (대화창을 이후에 화면 좌표로 렌더링하도록 이동)
 
   pop();
@@ -286,7 +214,7 @@ function gameScreenDraw() {
 }
 
 function handlePlayerMovement() {
-  if (keyIsDown(LEFT_ARROW)) {
+   if (keyIsDown(LEFT_ARROW)) {
     x -= speed;
     playerDir = "left";
   }
@@ -392,63 +320,22 @@ function keyPressed() {
   }
 }
 
-// =======================
-// 클릭 시 버튼 체크 + 속도 증가
-//  - stopButton 클릭 → switchToStopScreen()
-//  - quitButton 클릭 → switchToQuitScreen()
-//  - settingButton 클릭 → switchToSettingsScreen()
-//  - 그 외 → 기존 속도 boost 로직
-// =======================
+// 클릭 시 속도 증가
 function mousePressed() {
-  // 1) 버튼 우선 체크 (히트박스는 화면 좌표 기준)
-  if (
-    stopBtnX !== undefined &&
-    mouseX >= stopBtnX && mouseX <= stopBtnX + stopBtnW &&
-    mouseY >= stopBtnY && mouseY <= stopBtnY + stopBtnH
-  ) {
-    // stop 화면으로 전환
-    if (typeof switchToStopScreen === "function") {
-      switchToStopScreen();
-    }
-    return;
-  }
-
-  if (
-    quitBtnX !== undefined &&
-    mouseX >= quitBtnX && mouseX <= quitBtnX + quitBtnW &&
-    mouseY >= quitBtnY && mouseY <= quitBtnY + quitBtnH
-  ) {
-    // quit 화면으로 전환
-    if (typeof switchToQuitScreen === "function") {
-      switchToQuitScreen();
-    }
-    return;
-  }
-
-  if (
-    settingBtnX !== undefined &&
-    mouseX >= settingBtnX && mouseX <= settingBtnX + settingBtnW &&
-    mouseY >= settingBtnY && mouseY <= settingBtnY + settingBtnH
-  ) {
-    // settings 화면으로 전환
-    if (typeof switchToSettingsScreen === "function") {
-      switchToSettingsScreen();
-    }
-    return;
-  }
-
-  // 2) 버튼이 아닌 곳 클릭 → 기존 속도 증가 로직
-  // (baseSpeed, boostAmount, maxBoost는 전역으로 이미 있다고 가정)
+  // 1) 즉시 속도 올리기
   speed += boostAmount;
   if (speed > maxBoost) speed = maxBoost;
 
   print("현재 속도:", speed);
 
+  // 2) 이 클릭에 해당하는 효과를 1초 뒤에 제거
   setTimeout(() => {
     speed -= boostAmount;
 
+    // 기본 속도보다 내려가지 않도록
     if (speed < baseSpeed) speed = baseSpeed;
 
     print("복귀 이후 속도:", speed);
-  }, 1000);
+  }, 1000); // 1000ms 후에 이 클릭의 +3 효과 제거
 }
+//
