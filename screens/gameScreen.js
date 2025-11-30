@@ -49,6 +49,10 @@ let settingBtnX, settingBtnY, settingBtnW, settingBtnH;
 const playerYShift = 25;        // 유저 캐릭터를 화면에서 더 아래로
 const standingNpcYShift = 25;   // 서 있는 2번 NPC도 같은 만큼 아래로
 
+let stage2StartTime = null;   // stage2에 진입한 시각 (millis 단위)
+let stationImg;
+let isStationImgActive = false;
+
 function gameScreenPreload() {
   // 지하철 내부
   backgr = loadImage('assets/subwayBackground/낮(임산부석O) 창문 투명 - 대화창X.png');
@@ -80,6 +84,9 @@ function gameScreenPreload() {
   stopButton = loadImage('assets/buttons/stop_투명.png');
   quitButton = loadImage('assets/buttons/quit_투명.png');
   settingButton = loadImage('assets/buttons/setting_투명.png');
+
+  // 역 이미지 로드
+  stationImg = loadImage('assets/scenery/역_강남.png');
 }
 
 function gameScreenSetup() {
@@ -232,6 +239,15 @@ function gameScreenDraw() {
     settingBtnH = buttonHeight;
   }
   pop();
+
+    // ======= stage2 진입 후 3초가 지나면 강남역 도착 + stage1으로 전환 =======
+  if (stage === 2 && stage2StartTime !== null && !isStationImgActive) {
+    if (millis() - stage2StartTime >= 3000) {
+      isStationImgActive = true;  // drawOutside가 강남역 이미지만 그리게 됨
+      stage = 1;                  // 카메라 모드도 stage1으로 복귀
+      stage2StartTime = null;     // 한 번만 실행되도록 리셋
+    }
+  }
 }
 
 function handlePlayerMovement() {
@@ -257,7 +273,7 @@ function handlePlayerMovement() {
 function drawOutside() {
   const outsideYOffset = 250;
 
-  if (cityImg) {
+  if (cityImg && !isStationImgActive) {
     let sScale = 0.55;
     let sw = cityImg.width * sScale;
     let sh = cityImg.height * sScale;
@@ -271,7 +287,7 @@ function drawOutside() {
     }
   }
 
-  if (cloudImg) {
+  if (cloudImg && !isStationImgActive) {
     let cScale = 0.6;
     let cw = cloudImg.width * cScale;
     let ch = cloudImg.height * cScale;
@@ -284,7 +300,18 @@ function drawOutside() {
       image(cloudImg, xx, -40 + outsideYOffset, cw, ch);
     }
   }
+
+  if (isStationImgActive) {
+    let sw = 1024; // 고정된 가로 사이즈
+    let sScale = sw / stationImg.width; // 비율 유지
+    let sh = stationImg.height * sScale; // 세로 사이즈 계산
+    let fixedX = (width - sw) / 2; // 고정된 x좌표 계산
+    let fixedY = height - sh - 115; // 바닥에서 115px 띄우기
+    image(stationImg, fixedX, fixedY, sw, sh);
+  }
 }
+
+
 
 // =======================
 // NPC 렌더 (비율 통일)
@@ -321,7 +348,17 @@ function drawNPC(npcImg, baseX, baseY, index) {
 function keyPressed() {
   // Spacebar: stage 토글
   if (key === ' ' || keyCode === 32) {
-    stage = (stage === 1) ? 2 : 1;
+    if (stage === 1) {
+      // 1 → 2로 진입
+      stage = 2;
+      stage2StartTime = millis();   // 지금 시간 기록
+      isStationImgActive = false;   // 새 stage2 진입이니까 역이미지 리셋
+    } else {
+      // 2 → 1로 수동 복귀
+      stage = 1;
+      stage2StartTime = null;
+      isStationImgActive = false;
+    }
     return;
   }
 
