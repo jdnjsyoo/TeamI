@@ -4,6 +4,10 @@ let groundY = 480;    // 캐릭터가 항상 유지할 y
 let speed = 5;
 
 let img;        // 플레이어
+let imgFront;   // 정면
+let imgBack;    // 뒷모습
+let playerDir = "right";
+
 let playerScale = 300; // ⭐ 유저 NPC 크기
 
 let backgr;     // 지하철 내부(창문 투명)
@@ -25,26 +29,46 @@ let cloudSpeed = 1;  // 구름은 훨씬 느리게
 let npcImgs = [];
 let npcStandImgs = [];        // 서 있는 버전 이미지 (2번째 NPC용)
 let npcPositions = [];
-let npcTargetHeight = 220;   // 잠실/군인 정도 키로 통일
+// 좌석 배치용 전역 값
+let seatBaseY = 520;
+let startX = 230;
+let seatSpacing = 95;
+let npcTargetHeight = 280;   // 잠실/군인 정도 키로 통일
 
 let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부
+let stage = 1; // 1 or 2
+
+// 버튼 이미지
+let stopButton, quitButton, settingButton;
+// 버튼 히트박스(스크린 좌표 기준)
+let stopBtnX, stopBtnY, stopBtnW, stopBtnH;
+let quitBtnX, quitBtnY, quitBtnW, quitBtnH;
+let settingBtnX, settingBtnY, settingBtnW, settingBtnH;
 
 // ⭐ 추가: 발을 더 아래로 내리기 위한 Y 오프셋
 const playerYShift = 25;        // 유저 캐릭터를 화면에서 더 아래로
 const standingNpcYShift = 25;   // 서 있는 2번 NPC도 같은 만큼 아래로
 
-function preload() {
+let stage2StartTime = null;   // stage2에 진입한 시각 (millis 단위)
+let stationImg;
+let isStationImgActive = false;
+
+let highlightedNpcIndex = -1; // 스테이지 2에서 하이라이트될 NPC 인덱스
+
+function gameScreenPreload() {
   // 지하철 내부
   backgr = loadImage('assets/subwayBackground/낮(임산부석O) 창문 투명 - 대화창X.png');
   // 대화창 이미지
   dialogImg = loadImage('assets/subwayBackground/대화창.png');
 
-    // 창밖 풍경
-    cityImg  = loadImage('assets/scenery/시청1.png');
-    cloudImg = loadImage('assets/scenery/구름.png');
+  // 창밖 풍경
+  cityImg  = loadImage('assets/scenery/시청1.png');
+  cloudImg = loadImage('assets/scenery/구름.png');
 
   // 플레이어
   img = loadImage('assets/userCharacter/유저-1 걷는 옆모습 모션 (1).png');
+  imgFront = loadImage('assets/userCharacter/유저-1 정면 스탠딩.png');
+  imgBack  = loadImage('assets/userCharacter/유저-1 뒷모습.png')
 
   // NPC 7명 로드 — 첫 번째 NPC 교체됨!
   npcImgs[0] = loadImage('assets/npcChracter/홍대-1 기본 착석.png');        // ⭐ 교체된 1번 NPC
@@ -57,16 +81,21 @@ function preload() {
 
   // 두 번째 NPC의 "서 있는" 이미지
   npcStandImgs[1] = loadImage('assets/npcChracter/시청-2 정면 스탠딩.png');
+
+  // 버튼 이미지 로드
+  stopButton = loadImage('assets/buttons/stop_투명.png');
+  quitButton = loadImage('assets/buttons/quit_투명.png');
+  settingButton = loadImage('assets/buttons/setting_투명.png');
+
+  // 역 이미지 로드
+  stationImg = loadImage('assets/scenery/역_강남.png');
 }
 
-function setup() {
-  createCanvas(600, 400);
+function gameScreenSetup() {
+  // 고정 캔버스 사이즈 (요청대로)
+  createCanvas(1024, 869);
 
   // 좌석 위치 설정
-  let seatBaseY = 520;
-  let startX = 230;
-  let seatSpacing = 95;
-
   for (let i = 0; i < 7; i++) {
     npcPositions[i] = {
       x: startX + i * seatSpacing,
@@ -75,43 +104,76 @@ function setup() {
   }
 }
 
-function draw() {
+function gameScreenDraw() {
   background(0);
 
-  // 플레이어는 항상 groundY
-  y = groundY;
+  // 플레이어는 배경(world) 기준 바닥에 고정
+  y = backgr ? backgr.height - 80 : groundY;
 
-  drawOutside();
+  // Stage 1: 창밖 풍경은 화면 좌표로 렌더(월드 변환 이전)
+  if (stage === 1) drawOutside();
   handlePlayerMovement();
 
+        // stage 2에서 플레이어 위치에 따라 NPC 하이라이트
+        highlightedNpcIndex = -1; // 매 프레임 초기화
+        if (stage === 2) {
+          const firstNpcX = startX; // npcPositions[0].x와 동일
+          const sectionWidth = seatSpacing;
+          const rangeStart = firstNpcX - sectionWidth / 2 - 115;
+  
+          // 플레이어의 x 좌표가 전체 NPC 구간 내에 있는지 확인
+          const numNpcs = 7;
+          const rangeEnd = rangeStart + sectionWidth * numNpcs;
+  
+          if (x >= rangeStart && x < rangeEnd) {
+            const relativeX = x - rangeStart;
+            const index = Math.floor(relativeX / sectionWidth);
+            highlightedNpcIndex = constrain(index, 0, numNpcs - 1);
+          }
+        }
   x = constrain(x, 0, backgr.width - 350);
-  y = constrain(y, 0, backgr.height - 350);
+
+  // 전역 스케일 변수
+  const visibleSeats = 4; // 화면에 보이게 할 좌석 수
+  let stageScale = (stage === 1) ? 1.2 : (width / (visibleSeats * seatSpacing));
+  if (stage === 2) stageScale *= 0.92;
+  stageScale = constrain(stageScale, 1.2, 4.0);
 
   let offsetX = width / 4 + 20;
   let offsetY = height / 4 + 20;
 
-  let scrollX = -x + offsetX;
-  let scrollY = -y + offsetY;
+  let scrollX, scrollY;
+  if (stage === 2) {
+    // Stage 2: camera follows player
+    scrollX = -x + offsetX;
+    scrollY = -y + offsetY;
+  } else {
+    // Stage 1: camera fixed to leftmost position
+    scrollX = -0 + offsetX;
+    scrollY = -y + offsetY;
+  }
 
-  scrollX = constrain(scrollX, -backgr.width + width, 0);
-  scrollY = constrain(scrollY, -backgr.height + height, 0);
+  // 카메라 스크롤 제한 (stageScale 고려)
+  scrollX = constrain(scrollX, -backgr.width + width / stageScale, 0);
+  scrollY = constrain(scrollY, -backgr.height + height / stageScale, 0);
 
-  let npcBottomWorldY = height - scrollY;
+  // ======= 화면 최상단 빈 공간 제거 (world y shift) =======
+  let topScreenY = (scrollY - 50) * stageScale; // 배경의 화면 상단 Y 좌표
+  let worldShiftY = 0;
+  if (topScreenY > 0) {
+    worldShiftY = -topScreenY / stageScale;
+  }
+
+  const worldGroundY = backgr ? backgr.height - 80 : height - 50;
+  let npcBottomWorldY = worldGroundY;
 
   push();
-  translate(scrollX, scrollY);
-
+  scale(stageScale);
+  const stage2YOffset = (stage === 2) ? 100 : 0; // Stage 2일 때 전체를 약간 아래로
+  translate(scrollX - 50, scrollY - 50 + worldShiftY + stage2YOffset);
+  if (stage === 2) drawOutside();
 
   image(backgr, 0, 0, backgr.width, backgr.height);
-  // backgr 바로 아래에 대화창 이미지 배치
-  if (dialogImg) {
-    // 대화창을 캔버스 하단 중앙에 배치 (예시)
-    let dialogWidth = dialogImg.width;
-    let dialogHeight = dialogImg.height;
-    let dialogX = (backgr.width - dialogWidth) / 2;
-    let dialogY = backgr.height - dialogHeight - 30; // 하단에서 30px 위
-    image(dialogImg, dialogX, dialogY);
-  }
 
   // NPC 그리기
   for (let i = 0; i < npcImgs.length; i++) {
@@ -121,7 +183,8 @@ function draw() {
       imgToDraw = npcStandImgs[1];
     }
 
-    drawNPC(imgToDraw, npcPositions[i].x, npcBottomWorldY, i);
+    const isHighlighted = (i === highlightedNpcIndex);
+    drawNPC(imgToDraw, npcPositions[i].x, npcBottomWorldY, i, isHighlighted);
   }
 
   // ⭐ 플레이어 그리기 (Y축 아래로 평행이동만 추가)
@@ -129,31 +192,108 @@ function draw() {
   let playerTopY    = playerBottomY - playerScale;
 
   push();
-  if (facingLeft) {
+  if (playerDir === "left") {
+    // 왼쪽: 옆모습 뒤집기
     translate(x + playerScale, playerTopY + playerYShift);
     scale(-1, 1);
     image(img, 0, 0, playerScale, playerScale);
-  } else {
+  } else if (playerDir === "right") {
+    // 오른쪽: 옆모습 그대로
     image(img, x, playerTopY + playerYShift, playerScale, playerScale);
+  } else if (playerDir === "front") {
+    // 정면
+    image(imgBack, x, playerTopY + playerYShift, playerScale, playerScale);
+  } else if (playerDir === "back") {
+    // 뒷모습
+    image(imgFront, x, playerTopY + playerYShift, playerScale, playerScale);
   }
   pop();
 
+  pop(); // world transform 끝
+
+  // ======= 화면 하단 고정 대화창 =======
+  if (dialogImg) {
+    let dW = dialogImg.width;
+    let dH = dialogImg.height;
+    let dX = (width - dW) / 2;
+    let dY = height - dH;
+    image(dialogImg, dX, dY, dW, dH);
+  }
+
+  // ======= 우측 상단 버튼 (스크린 좌표, 스케일/스크롤 영향 X) =======
+  push();
+  const buttonWidth = 100;
+  const buttonHeight = 73;
+  const buttonGap = 20;
+  let buttonX = width - buttonWidth - 10; // 오른쪽 여백 10px
+  const buttonY = 20; // 위쪽 여백 20px
+
+  if (stopButton) {
+    image(stopButton, buttonX, buttonY, buttonWidth, buttonHeight);
+    // stop 버튼 히트박스 저장
+    stopBtnX = buttonX;
+    stopBtnY = buttonY;
+    stopBtnW = buttonWidth;
+    stopBtnH = buttonHeight;
+
+    buttonX -= buttonWidth / 2 + buttonGap;
+  }
+
+  if (quitButton) {
+    image(quitButton, buttonX, buttonY, buttonWidth, buttonHeight);
+    // quit 버튼 히트박스 저장
+    quitBtnX = buttonX;
+    quitBtnY = buttonY;
+    quitBtnW = buttonWidth;
+    quitBtnH = buttonHeight;
+
+    buttonX -= buttonWidth / 2 + buttonGap;
+  }
+
+  if (settingButton) {
+    image(settingButton, buttonX, buttonY, buttonWidth, buttonHeight);
+    // setting 버튼 히트박스 저장
+    settingBtnX = buttonX;
+    settingBtnY = buttonY;
+    settingBtnW = buttonWidth;
+    settingBtnH = buttonHeight;
+  }
   pop();
+
+    // ======= stage2 진입 후 3초가 지나면 강남역 도착 + stage1으로 전환 =======
+  if (stage === 2 && stage2StartTime !== null && !isStationImgActive) {
+    if (millis() - stage2StartTime >= 10000) {
+      isStationImgActive = true;  // drawOutside가 강남역 이미지만 그리게 됨
+      stage = 1;                  // 카메라 모드도 stage1으로 복귀
+      stage2StartTime = null;     // 한 번만 실행되도록 리셋
+    }
+  }
 }
 
 function handlePlayerMovement() {
   if (keyIsDown(LEFT_ARROW)) {
     x -= speed;
-    facingLeft = true;
+    playerDir = "left";
   }
-  if (keyIsDown(RIGHT_ARROW)) {
+  // → 오른쪽
+  else if (keyIsDown(RIGHT_ARROW)) {
     x += speed;
-    facingLeft = false;
+    playerDir = "right";
+  }
+  // ↑ 정면
+  else if (keyIsDown(UP_ARROW)) {
+    playerDir = "front";
+  }
+  // ↓ 뒷모습
+  else if (keyIsDown(DOWN_ARROW)) {
+    playerDir = "back";
   }
 }
 
 function drawOutside() {
-  if (cityImg) {
+  const outsideYOffset = 250;
+
+  if (cityImg && !isStationImgActive) {
     let sScale = 0.55;
     let sw = cityImg.width * sScale;
     let sh = cityImg.height * sScale;
@@ -161,12 +301,13 @@ function drawOutside() {
     cityX -= citySpeed;
     if (cityX <= -sw) cityX += sw;
 
-    for (let xx = cityX; xx < width; xx += sw) {
-      image(cityImg, xx, 0, sw, sh);
+    const maxX = (stage === 2 && backgr) ? backgr.width : width;
+    for (let xx = cityX; xx < maxX; xx += sw) {
+      image(cityImg, xx, outsideYOffset, sw, sh);
     }
   }
 
-  if (cloudImg) {
+  if (cloudImg && !isStationImgActive) {
     let cScale = 0.6;
     let cw = cloudImg.width * cScale;
     let ch = cloudImg.height * cScale;
@@ -174,25 +315,33 @@ function drawOutside() {
     cloudX -= cloudSpeed;
     if (cloudX <= -cw) cloudX += cw;
 
-    for (let xx = cloudX; xx < width; xx += cw) {
-      image(cloudImg, xx, -40, cw, ch);
+    const maxX = (stage === 2 && backgr) ? backgr.width : width;
+    for (let xx = cloudX; xx < maxX; xx += cw) {
+      image(cloudImg, xx, -40 + outsideYOffset, cw, ch);
     }
+  }
+
+  if (isStationImgActive) {
+    let sw = 1024; // 고정된 가로 사이즈
+    let sScale = sw / stationImg.width; // 비율 유지
+    let sh = stationImg.height * sScale; // 세로 사이즈 계산
+    let fixedX = (width - sw) / 2; // 고정된 x좌표 계산
+    let fixedY = height - sh - 115; // 바닥에서 115px 띄우기
+    image(stationImg, fixedX, fixedY, sw, sh);
   }
 }
 
+
+
 // =======================
 // NPC 렌더 (비율 통일)
-//  - 기본: 앉아 있는 NPC (npcTargetHeight, lift 12)
-//  - 2번 NPC가 서 있을 때: playerScale 크기로 키우고 바닥에 거의 붙게
 // =======================
-function drawNPC(npcImg, baseX, baseY, index) {
+function drawNPC(npcImg, baseX, baseY, index, isHighlighted) {
   if (!npcImg) return;
 
-  // 기본 값: 앉아 있는 상태
   let targetHeight = npcTargetHeight;
   let lift = 12; // 좌석 위에 살짝 띄우기
 
-  // 2번째 NPC가 "서 있는 이미지"로 그려질 때만 키우기 + 바닥까지
   let isStandingNpc2 = (index === 1 && isNpc2Standing && npcStandImgs[1] && npcImg === npcStandImgs[1]);
   if (isStandingNpc2) {
     targetHeight = playerScale; // 유저와 같은 키
@@ -204,21 +353,151 @@ function drawNPC(npcImg, baseX, baseY, index) {
   let h = targetHeight;
 
   let drawX = baseX - w / 2;
-  let drawY = baseY - h - lift;
+  let drawY = baseY - h;
 
-  // ⭐ 서 있는 2번 NPC만 더 아래로 평행이동
   if (isStandingNpc2) {
     drawY += standingNpcYShift;
   }
 
-  image(npcImg, drawX, drawY, w, h);
+  // 하이라이트 효과 (캐릭터 외곽선)
+
+  if (isHighlighted) {
+
+    // 가장 안정적인 방법: drawingContext를 사용하여 흰색 실루엣 생성
+
+    let buffer = createGraphics(w, h);
+
+    buffer.image(npcImg, 0, 0, w, h);
+
+    
+
+    // 'source-in' composite operation을 사용하여 기존 픽셀 위에만 색칠
+
+    buffer.drawingContext.globalCompositeOperation = 'source-in';
+
+    
+
+    // 흰색으로 채우기
+
+    buffer.fill(255);
+
+    buffer.noStroke();
+
+    buffer.rect(0, 0, w, h);
+
+    
+
+    // composite operation 리셋 (p5.js의 다른 그리기에 영향 없도록)
+
+    buffer.drawingContext.globalCompositeOperation = 'source-over';
+
+
+
+    const borderPx = 3;
+
+
+
+    // 흰색 실루엣을 상하좌우로 그려 테두리 효과를 냄
+
+    image(buffer, drawX - borderPx, drawY, w, h);
+
+    image(buffer, drawX + borderPx, drawY, w, h);
+
+    image(buffer, drawX, drawY - borderPx, w, h);
+
+    image(buffer, drawX, drawY + borderPx, w, h);
+
+    
+
+    buffer.remove(); // 메모리 누수 방지를 위해 버퍼 제거
+
+  }
+
+
+
+  // 원본 이미지를 위에 다시 그립니다.
+
+  image(npcImg, drawX, drawY, w, h);}
+
+// =======================
+// 키 입력
+// =======================
+function keyPressed() {
+  // Spacebar: stage 토글
+  if (key === ' ' || keyCode === 32) {
+    if (stage === 1) {
+      // 1 → 2로 진입
+      stage = 2;
+      stage2StartTime = millis();   // 지금 시간 기록
+      isStationImgActive = false;   // 새 stage2 진입이니까 역이미지 리셋
+    } else {
+      // 2 → 1로 수동 복귀
+      stage = 1;
+      stage2StartTime = null;
+      isStationImgActive = false;
+    }
+    return;
+  }
+
+  // 'n' 키: 2번 NPC 일어나기
+  if (key === 'n' || key === 'N') {
+    isNpc2Standing = true;
+  }
 }
 
 // =======================
-// 스페이스바 누르면 2번 NPC 서기
+// 마우스 클릭
+// 1) 버튼 클릭 여부 먼저 체크해서 화면 전환
+// 2) 그 외 영역 클릭이면 기존 속도 증가 로직
 // =======================
-function keyPressed() {
-  if (key === ' ' || keyCode === 32) {
-    isNpc2Standing = true;
+function mousePressed() {
+  // --- stop 버튼 ---
+  if (
+    stopBtnX !== undefined &&
+    mouseX >= stopBtnX && mouseX <= stopBtnX + stopBtnW &&
+    mouseY >= stopBtnY && mouseY <= stopBtnY + stopBtnH
+  ) {
+    if (typeof switchToStopScreen === "function") {
+      switchToStopScreen();
+    }
+    return;
   }
+
+  // --- quit 버튼 ---
+  if (
+    quitBtnX !== undefined &&
+    mouseX >= quitBtnX && mouseX <= quitBtnX + quitBtnW &&
+    mouseY >= quitBtnY && mouseY <= quitBtnY + quitBtnH
+  ) {
+    if (typeof switchToQuitScreen === "function") {
+      switchToQuitScreen();
+    }
+    return;
+  }
+
+  // --- setting 버튼 ---
+  if (
+    settingBtnX !== undefined &&
+    mouseX >= settingBtnX && mouseX <= settingBtnX + settingBtnW &&
+    mouseY >= settingBtnY && mouseY <= settingBtnY + settingBtnH
+  ) {
+    if (typeof switchToSettingsScreen === "function") {
+      switchToSettingsScreen();
+    }
+    return;
+  }
+
+  // --- 버튼이 아닌 곳 클릭 → 기존 속도 증가 로직 ---
+  speed += boostAmount;
+  if (speed > maxBoost) speed = maxBoost;
+
+  print("현재 속도:", speed);
+
+  setTimeout(() => {
+    speed -= boostAmount;
+
+    if (speed < baseSpeed) speed = baseSpeed;
+
+    print("복귀 이후 속도:", speed);
+  }, 1000);
 }

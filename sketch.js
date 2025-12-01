@@ -1,10 +1,45 @@
+// 공통으로 쓰는: prefix를 받아서 해당 화면의 preload/setup/draw를 p5 전역에 연결
+function applyScreen(prefix) {
+  preload = window[`${prefix}Preload`] || function () {};
+  setup   = window[`${prefix}Setup`]   || function () {};
+  draw    = window[`${prefix}Draw`]    || function () {};
+}
 
-// gameScreen.js의 함수들을 사용하여 메인에서 바로 gameScreen이 뜨도록 연결
-let gameScreenPreload, gameScreenSetup, gameScreenDraw;
+// =========================
+// 각 화면으로 전환하는 함수들
+// =========================
 
-// gameScreen.js의 함수들을 임포트
-// p5.js에서는 전역 함수로 정의되어 있으므로, 아래처럼 위임만 하면 됨
+function switchToGameScreen() {
+  applyScreen("gameScreen");
+  // 화면 전환 시, 새 화면의 setup을 직접 한 번 실행
+  if (typeof setup === "function") {
+    setup();
+  }
+}
 
-preload = typeof preload === 'function' ? preload : undefined;
-setup   = typeof setup   === 'function' ? setup   : undefined;
-draw    = typeof draw    === 'function' ? draw    : undefined;
+function switchToQuitScreen() {
+  applyScreen("quitScreen");
+  if (typeof setup === "function") {
+    setup();
+  }
+}
+
+function switchToSettingsScreen() {
+  applyScreen("settingsScreen");
+  if (typeof setup === "function") {
+    setup();
+  }
+}
+
+function switchToStopScreen() {
+  applyScreen("stopScreen");
+  if (typeof setup === "function") {
+    setup();
+  }
+}
+
+// =========================
+// 처음엔 gameScreen으로 시작
+// (여기서는 setup()을 직접 호출 안 함 → p5가 처음 한 번 호출해줌)
+// =========================
+applyScreen("gameScreen");
