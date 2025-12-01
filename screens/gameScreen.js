@@ -26,7 +26,9 @@ let citySpeed = 8;   // 도시 속도
 let cloudSpeed = 1;  // 구름은 훨씬 느리게
 
 // NPC 7명
-let npcImgs = [];
+let npcAnimationFrames = [];    // NPC 애니메이션 프레임 (2D 배열)
+let npcCurrentFrameIndex = [0, 0, 0, 0, 0, 0, 0]; // 각 NPC의 현재 프레임 인덱스
+let lastAnimationTime = 0;      // 마지막 애니메이션 시간
 let npcStandImgs = [];        // 서 있는 버전 이미지 (2번째 NPC용)
 let npcPositions = [];
 // 좌석 배치용 전역 값
@@ -54,6 +56,14 @@ let stationImg;
 let isStationImgActive = false;
 
 let highlightedNpcIndex = -1; // 스테이지 2에서 하이라이트될 NPC 인덱스
+let selectedNpcIndex = -1;    // 스테이지 1에서 선택된 NPC 인덱스
+let sitHereImg;               // '여기 앉으세요' 이미지
+let sitHereHoverImg;          // '여기 앉으세요' 호버 이미지
+
+// 'sit here' 버튼 상호작용 상태 변수
+let isSitButtonHovered = false;
+let isSitButtonPressed = false;
+let sitButtonPressTime = 0;
 
 function gameScreenPreload() {
   // 지하철 내부
@@ -70,14 +80,38 @@ function gameScreenPreload() {
   imgFront = loadImage('assets/userCharacter/유저-1 정면 스탠딩.png');
   imgBack  = loadImage('assets/userCharacter/유저-1 뒷모습.png')
 
-  // NPC 7명 로드 — 첫 번째 NPC 교체됨!
-  npcImgs[0] = loadImage('assets/npcChracter/홍대-1 기본 착석.png');        // ⭐ 교체된 1번 NPC
-  npcImgs[1] = loadImage('assets/npcChracter/시청-2 모션.png');
-  npcImgs[2] = loadImage('assets/npcChracter/강남-1 모션 (1).png');
-  npcImgs[3] = loadImage('assets/npcChracter/강변 군인1.png');
-  npcImgs[4] = loadImage('assets/npcChracter/서울대입구-1 모션 (1).png');
-  npcImgs[5] = loadImage('assets/npcChracter/성수-1 기본 착석.png');
-  npcImgs[6] = loadImage('assets/npcChracter/잠실 쇼핑1.png');
+  // NPC 애니메이션 프레임 로드
+  npcAnimationFrames[0] = [
+    loadImage('assets/npcChracter/홍대-1 기본 착석.png'),
+    loadImage('assets/npcChracter/홍대-1 모션 (1).png'),
+    loadImage('assets/npcChracter/홍대-1 모션 (2).png')
+  ];
+  npcAnimationFrames[1] = [
+    loadImage('assets/npcChracter/시청-2 모션.png'),
+    loadImage('assets/npcChracter/시청-2 힌트 전광판.png')
+  ];
+  npcAnimationFrames[2] = [
+    loadImage('assets/npcChracter/강남-1 모션 (1).png'),
+    loadImage('assets/npcChracter/강남-1 모션 (2).png')
+  ];
+  npcAnimationFrames[3] = [
+    loadImage('assets/npcChracter/강변 군인1.png'),
+    loadImage('assets/npcChracter/강변 군인2.png')
+  ];
+  npcAnimationFrames[4] = [
+    loadImage('assets/npcChracter/서울대입구-1 모션 (1).png'),
+    loadImage('assets/npcChracter/서울대입구-1 모션 (2).png')
+  ];
+  npcAnimationFrames[5] = [
+    loadImage('assets/npcChracter/성수-1 기본 착석.png'),
+    loadImage('assets/npcChracter/성수-1 모션 (1).png'),
+    loadImage('assets/npcChracter/성수-1 모션 (2).png')
+  ];
+  npcAnimationFrames[6] = [
+    loadImage('assets/npcChracter/잠실 쇼핑1.png'),
+    loadImage('assets/npcChracter/잠실 쇼핑2.png'),
+    loadImage('assets/npcChracter/잠실 쇼핑3.png')
+  ];
 
   // 두 번째 NPC의 "서 있는" 이미지
   npcStandImgs[1] = loadImage('assets/npcChracter/시청-2 정면 스탠딩.png');
@@ -86,9 +120,11 @@ function gameScreenPreload() {
   stopButton = loadImage('assets/buttons/stop_투명.png');
   quitButton = loadImage('assets/buttons/quit_투명.png');
   settingButton = loadImage('assets/buttons/setting_투명.png');
+  sitHereImg = loadImage('assets/buttons/sit_here.png');
+  sitHereHoverImg = loadImage('assets/buttons/sit_here_hover.png');
 
   // 역 이미지 로드
-  stationImg = loadImage('assets/scenery/역_강남.png');
+  stationImg = loadImage('assets/scenery/역_시청.png');
 }
 
 function gameScreenSetup() {
@@ -104,6 +140,14 @@ function gameScreenSetup() {
   }
 }
 
+// Stage 2로 전환하는 헬퍼 함수
+function enterStage2() {
+  stage = 2;
+  stage2StartTime = millis();
+  isStationImgActive = false;
+  selectedNpcIndex = -1;
+}
+
 function gameScreenDraw() {
   background(0);
 
@@ -114,23 +158,25 @@ function gameScreenDraw() {
   if (stage === 1) drawOutside();
   handlePlayerMovement();
 
-        // stage 2에서 플레이어 위치에 따라 NPC 하이라이트
-        highlightedNpcIndex = -1; // 매 프레임 초기화
-        if (stage === 2) {
-          const firstNpcX = startX; // npcPositions[0].x와 동일
-          const sectionWidth = seatSpacing;
-          const rangeStart = firstNpcX - sectionWidth / 2 - 115;
-  
-          // 플레이어의 x 좌표가 전체 NPC 구간 내에 있는지 확인
-          const numNpcs = 7;
-          const rangeEnd = rangeStart + sectionWidth * numNpcs;
-  
-          if (x >= rangeStart && x < rangeEnd) {
-            const relativeX = x - rangeStart;
-            const index = Math.floor(relativeX / sectionWidth);
-            highlightedNpcIndex = constrain(index, 0, numNpcs - 1);
-          }
-        }
+  // stage 2에서 플레이어 위치에 따라 NPC 하이라이트
+  if (stage === 2) {
+    const firstNpcX = startX; // npcPositions[0].x와 동일
+    const sectionWidth = seatSpacing;
+    const rangeStart = firstNpcX - sectionWidth / 2 - 115;
+
+    // 플레이어의 x 좌표가 전체 NPC 구간 내에 있는지 확인
+    const numNpcs = 7;
+    const rangeEnd = rangeStart + sectionWidth * numNpcs;
+
+    highlightedNpcIndex = -1; // 매 프레임 초기화
+    if (x >= rangeStart && x < rangeEnd) {
+      const relativeX = x - rangeStart;
+      const index = Math.floor(relativeX / sectionWidth);
+      highlightedNpcIndex = constrain(index, 0, numNpcs - 1);
+    }
+  } else {
+    highlightedNpcIndex = -1; // stage 1에서는 실시간 하이라이트 없음
+  }
   x = constrain(x, 0, backgr.width - 350);
 
   // 전역 스케일 변수
@@ -163,9 +209,25 @@ function gameScreenDraw() {
   if (topScreenY > 0) {
     worldShiftY = -topScreenY / stageScale;
   }
+  
+  // NPC 애니메이션 프레임 업데이트
+  if (millis() - lastAnimationTime > 500) {
+    for (let i = 0; i < 7; i++) {
+      if (npcAnimationFrames[i] && npcAnimationFrames[i].length > 0) {
+        npcCurrentFrameIndex[i] = (npcCurrentFrameIndex[i] + 1) % npcAnimationFrames[i].length;
+      }
+    }
+    lastAnimationTime = millis();
+  }
 
   const worldGroundY = backgr ? backgr.height - 80 : height - 50;
   let npcBottomWorldY = worldGroundY;
+  
+  // 마우스 좌표를 월드 좌표로 변환
+  const stage2YOffsetForMouse = (stage === 2) ? 100 : 0;
+  let worldMouseX = (mouseX / stageScale) - (scrollX - 50);
+  let worldMouseY = (mouseY / stageScale) - (scrollY - 50 + worldShiftY + stage2YOffsetForMouse);
+
 
   push();
   scale(stageScale);
@@ -176,15 +238,17 @@ function gameScreenDraw() {
   image(backgr, 0, 0, backgr.width, backgr.height);
 
   // NPC 그리기
-  for (let i = 0; i < npcImgs.length; i++) {
-    let imgToDraw = npcImgs[i];
+  isSitButtonHovered = false; // 매 프레임 호버 상태 초기화
+  for (let i = 0; i < npcAnimationFrames.length; i++) {
+    const currentFrameIndex = npcCurrentFrameIndex[i];
+    let imgToDraw = npcAnimationFrames[i][currentFrameIndex];
 
     if (i === 1 && isNpc2Standing && npcStandImgs[1]) {
       imgToDraw = npcStandImgs[1];
     }
 
-    const isHighlighted = (i === highlightedNpcIndex);
-    drawNPC(imgToDraw, npcPositions[i].x, npcBottomWorldY, i, isHighlighted);
+    const isHighlighted = (i === highlightedNpcIndex) || (i === selectedNpcIndex);
+    drawNPC(imgToDraw, npcPositions[i].x, npcBottomWorldY, i, isHighlighted, worldMouseX, worldMouseY);
   }
 
   // ⭐ 플레이어 그리기 (Y축 아래로 평행이동만 추가)
@@ -260,28 +324,31 @@ function gameScreenDraw() {
   }
   pop();
 
-    // ======= stage2 진입 후 3초가 지나면 강남역 도착 + stage1으로 전환 =======
+    // ======= stage2 진입 후 10초가 지나면 역 도착 + stage1으로 전환 =======
   if (stage === 2 && stage2StartTime !== null && !isStationImgActive) {
     if (millis() - stage2StartTime >= 10000) {
-      isStationImgActive = true;  // drawOutside가 강남역 이미지만 그리게 됨
+      isStationImgActive = true;  // drawOutside가 역 이미지만 그리게 됨
       stage = 1;                  // 카메라 모드도 stage1으로 복귀
+      selectedNpcIndex = highlightedNpcIndex; // ⭐ 하이라이트된 NPC를 선택
       stage2StartTime = null;     // 한 번만 실행되도록 리셋
     }
   }
 }
 
 function handlePlayerMovement() {
-  if (keyIsDown(LEFT_ARROW)) {
-    x -= speed;
-    playerDir = "left";
-  }
-  // → 오른쪽
-  else if (keyIsDown(RIGHT_ARROW)) {
-    x += speed;
-    playerDir = "right";
+  if (stage !== 1) { // Stage 1이 아닐 때만 좌우 이동 허용
+    if (keyIsDown(LEFT_ARROW)) {
+      x -= speed;
+      playerDir = "left";
+    }
+    // → 오른쪽
+    else if (keyIsDown(RIGHT_ARROW)) {
+      x += speed;
+      playerDir = "right";
+    }
   }
   // ↑ 정면
-  else if (keyIsDown(UP_ARROW)) {
+  if (keyIsDown(UP_ARROW)) {
     playerDir = "front";
   }
   // ↓ 뒷모습
@@ -336,7 +403,7 @@ function drawOutside() {
 // =======================
 // NPC 렌더 (비율 통일)
 // =======================
-function drawNPC(npcImg, baseX, baseY, index, isHighlighted) {
+function drawNPC(npcImg, baseX, baseY, index, isHighlighted, worldMouseX, worldMouseY) {
   if (!npcImg) return;
 
   let targetHeight = npcTargetHeight;
@@ -360,64 +427,74 @@ function drawNPC(npcImg, baseX, baseY, index, isHighlighted) {
   }
 
   // 하이라이트 효과 (캐릭터 외곽선)
-
   if (isHighlighted) {
-
     // 가장 안정적인 방법: drawingContext를 사용하여 흰색 실루엣 생성
-
     let buffer = createGraphics(w, h);
-
     buffer.image(npcImg, 0, 0, w, h);
-
     
-
     // 'source-in' composite operation을 사용하여 기존 픽셀 위에만 색칠
-
     buffer.drawingContext.globalCompositeOperation = 'source-in';
-
     
-
     // 흰색으로 채우기
-
     buffer.fill(255);
-
     buffer.noStroke();
-
     buffer.rect(0, 0, w, h);
-
     
-
     // composite operation 리셋 (p5.js의 다른 그리기에 영향 없도록)
-
     buffer.drawingContext.globalCompositeOperation = 'source-over';
-
-
 
     const borderPx = 3;
 
-
-
     // 흰색 실루엣을 상하좌우로 그려 테두리 효과를 냄
-
     image(buffer, drawX - borderPx, drawY, w, h);
-
     image(buffer, drawX + borderPx, drawY, w, h);
-
     image(buffer, drawX, drawY - borderPx, w, h);
-
     image(buffer, drawX, drawY + borderPx, w, h);
-
     
-
     buffer.remove(); // 메모리 누수 방지를 위해 버퍼 제거
-
   }
 
-
-
   // 원본 이미지를 위에 다시 그립니다.
+  image(npcImg, drawX, drawY, w, h);
 
-  image(npcImg, drawX, drawY, w, h);}
+  // 'sit here' 버튼 로직
+  if (isHighlighted && stage === 1 && sitHereImg) {
+    const desiredSitHereWidth = 200;
+    const sitHereScale = desiredSitHereWidth / sitHereImg.width;
+    const sitW = sitHereImg.width * sitHereScale;
+    const sitH = sitHereImg.height * sitHereScale;
+    const sitX = drawX + (w - sitW) / 2;
+    const sitY = drawY - sitH * 0.8;
+
+    const isCurrentlyHovered = (worldMouseX > sitX && worldMouseX < sitX + sitW && worldMouseY > sitY && worldMouseY < sitY + sitH);
+    if (isCurrentlyHovered) {
+      isSitButtonHovered = true;
+    }
+
+    let imgToDraw = isCurrentlyHovered ? sitHereHoverImg : sitHereImg;
+    
+    let scaleMod = 1.0;
+    // 클릭 애니메이션 처리
+    if (isSitButtonPressed && isCurrentlyHovered) {
+      if (millis() - sitButtonPressTime < 200) { // 200ms 애니메이션
+        scaleMod = 0.9; // 클릭 효과로 크기 줄이기
+      } else {
+        // 애니메이션 종료 후 stage 1로 전환 (NPC 선택 해제)
+        isSitButtonPressed = false;
+        stage = 1; // stage 1으로 돌아옴
+        selectedNpcIndex = -1; // NPC 선택 해제
+        return; // 상태가 바뀌므로 더 이상 그리지 않음
+      }
+    }
+    
+    const finalW = sitW * scaleMod;
+    const finalH = sitH * scaleMod;
+    const finalX = sitX + (sitW - finalW) / 2;
+    const finalY = sitY + (sitH - finalH) / 2;
+
+    image(imgToDraw, finalX, finalY, finalW, finalH);
+  }
+}
 
 // =======================
 // 키 입력
@@ -427,12 +504,11 @@ function keyPressed() {
   if (key === ' ' || keyCode === 32) {
     if (stage === 1) {
       // 1 → 2로 진입
-      stage = 2;
-      stage2StartTime = millis();   // 지금 시간 기록
-      isStationImgActive = false;   // 새 stage2 진입이니까 역이미지 리셋
+      enterStage2();
     } else {
       // 2 → 1로 수동 복귀
       stage = 1;
+      selectedNpcIndex = highlightedNpcIndex; // 현재 하이라이트된 NPC를 선택
       stage2StartTime = null;
       isStationImgActive = false;
     }
@@ -485,6 +561,13 @@ function mousePressed() {
       switchToSettingsScreen();
     }
     return;
+  }
+
+  // --- sit here 버튼 ---
+  if (isSitButtonHovered) {
+    isSitButtonPressed = true;
+    sitButtonPressTime = millis();
+    return; // 다른 클릭 로직 방지
   }
 
   // --- 버튼이 아닌 곳 클릭 → 기존 속도 증가 로직 ---
