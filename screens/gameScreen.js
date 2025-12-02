@@ -499,7 +499,7 @@ function drawNPC(npcImg, baseX, baseY, index, isHighlighted, worldMouseX, worldM
 // =======================
 // 키 입력
 // =======================
-function keyPressed() {
+function gameScreenKeyPressed() {
   // Spacebar: stage 토글
   if (key === ' ' || keyCode === 32) {
     if (stage === 1) {
@@ -526,7 +526,7 @@ function keyPressed() {
 // 1) 버튼 클릭 여부 먼저 체크해서 화면 전환
 // 2) 그 외 영역 클릭이면 기존 속도 증가 로직
 // =======================
-function mousePressed() {
+function gameScreenMousePressed() {
   // --- stop 버튼 ---
   if (
     stopBtnX !== undefined &&
