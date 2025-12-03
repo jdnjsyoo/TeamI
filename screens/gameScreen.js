@@ -93,6 +93,14 @@ let resultOverlayStartTime = null; // SUCCESS/FAIL 표시 타이밍용
 let pressEnterImg;      // Press "ENTER" 이미지
 let showPressEnter = true
 
+// Timer variables
+let timeBarBase;
+let timeBar;
+let timerWidth;
+const stage2Duration = 10000; // 10 seconds
+let timerStartTime;
+
+
 
 function gameScreenPreload() {
   //press enter to start
@@ -162,6 +170,10 @@ function gameScreenPreload() {
   // ⭐ 결과 에셋 로드 (폴더명 result)
   successImg = loadImage('assets/result/SUCCESS.png');
   failImg    = loadImage('assets/result/FAIL.png');
+
+  // Timer images
+  timeBarBase = loadImage('assets/time/time0.png');
+  timeBar = loadImage('assets/time/time100.png');
 }
 
 function gameScreenSetup() {
@@ -187,19 +199,25 @@ function enterStage2() {
   isStationImgActive = false;
   selectedNpcIndex = -1;
   showPressEnter = false;
+
+  // Initialize timer
+  timerStartTime = millis();
+  if (timeBar) {
+    timerWidth = timeBar.width;
+  }
 }
 
 function gameScreenDraw() {
   background(0);
 
-  // ⭐ sit here 클릭 후 3초가 지나면 2번 NPC 서기 (유저와 같은 키, 이후 걷기 타이밍 시작)
+  // sit here 클릭 후 3초가 지나면 2번 NPC 서기 (유저와 같은 키, 이후 걷기 타이밍 시작)
   if (npc2StandTriggerTime !== null && millis() - npc2StandTriggerTime >= 3000) {
     isNpc2Standing = true;
     npc2StandTriggerTime = null;
     npc2WalkStartTime = millis();   // 서 있는 시점 기록
   }
 
-  // ⭐ 2번 NPC가 서 있고, 2초가 지난 뒤부터 왼쪽으로 걷기 시작 (화면에서 나갈 때까지)
+  // 2번 NPC가 서 있고, 2초가 지난 뒤부터 왼쪽으로 걷기 시작 (화면에서 나갈 때까지)
   if (
     isNpc2Standing &&
     npc2WalkStartTime !== null &&
@@ -432,7 +450,6 @@ function gameScreenDraw() {
     settingBtnH = buttonHeight;
   }
   pop();
-
   // ======= stage2 진입 후 10초가 지나면 역 도착 + stage1으로 전환 =======
   if (stage === 2 && stage2StartTime !== null && !isStationImgActive) {
     if (millis() - stage2StartTime >= 10000) {
@@ -443,6 +460,36 @@ function gameScreenDraw() {
     }
   }
 
+  // Timer rendering in stage 2
+  if (stage === 2 && timeBarBase && timeBar) {
+    // Define new height and calculate new width to maintain aspect ratio
+    const newHeight = 360;
+    const newWidth = timeBarBase.width * (newHeight / timeBarBase.height);
+
+    const elapsedTime = millis() - timerStartTime;
+    const timeRatio = max(0, 1 - (elapsedTime / stage2Duration));
+    
+    // Calculate the shrinking width for both destination and source
+    const shrinkingDestWidth = newWidth * timeRatio;
+    const shrinkingSourceWidth = timeBar.width * timeRatio;
+
+    // Draw timer at top-left
+    const timerX = 20;
+    const timerY = -130;
+    
+    // Draw the resized base bar
+    image(timeBarBase, timerX, timerY, newWidth, newHeight);
+    
+    // Draw the resized and shrinking red bar
+    if (shrinkingDestWidth > 0) {
+      image(timeBar, 
+            timerX, timerY,               // Destination position
+            shrinkingDestWidth, newHeight,  // Destination size
+            0, 0,                         // Source position
+            shrinkingSourceWidth, timeBar.height // Source size
+           );
+    }
+  }
   // ⭐ SUCCESS / FAIL 오버레이 (2초 지연 후 화면 거의 중앙, 살짝 위쪽)
   if (resultOverlayType && resultOverlayStartTime !== null) {
     if (millis() - resultOverlayStartTime >= 2000) {
