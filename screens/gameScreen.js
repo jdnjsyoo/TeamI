@@ -89,7 +89,15 @@ let failImg;
 let resultOverlayType = null;      // 'success' 또는 'fail'
 let resultOverlayStartTime = null; // SUCCESS/FAIL 표시 타이밍용
 
+// press enter 추가
+let pressEnterImg;      // Press "ENTER" 이미지
+let showPressEnter = true
+
+
 function gameScreenPreload() {
+  //press enter to start
+  pressEnterImg = loadImage("assets/start/pressenter.png");
+
   // 지하철 내부
   backgr = loadImage('assets/subwayBackground/낮(임산부석O) 창문 투명 - 대화창X.png');
   // 대화창 이미지
@@ -178,6 +186,7 @@ function enterStage2() {
   stage2StartTime = millis();
   isStationImgActive = false;
   selectedNpcIndex = -1;
+  showPressEnter = false;
 }
 
 function gameScreenDraw() {
@@ -450,6 +459,21 @@ function gameScreenDraw() {
       }
     }
   }
+
+   // ⭐⭐ 게임 시작 전 "PRESS SPACE" 오버레이
+  if (showPressEnter && stage === 1 && pressEnterImg) {
+    push();
+    // 화면 살짝 어둡게
+    noStroke();
+    fill(0, 0, 0, 150);
+    rect(0, 0, width, height);
+
+    // 안내 이미지 중앙(살짝 아래쪽)에 표시
+    imageMode(CENTER);
+    image(pressEnterImg, width / 2, height / 2 + 150);
+    pop();
+  }
+
 }
 
 function handlePlayerMovement() {

@@ -29,6 +29,7 @@ function startScreenPreload() {
   imgStart = loadImage("assets/start/시작화면.png");
   imgHowto = loadImage("assets/start/플레이방법.png");
   imgHint  = loadImage("assets/start/힌트화면.png");
+  gameScreenPreload();
 }
 
 // =====================
