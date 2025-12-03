@@ -3,9 +3,10 @@ let y = 480;          // 바닥에 있을 때 y
 let groundY = 480;    // 캐릭터가 항상 유지할 y
 let speed = 5;
 
-let img;        // 플레이어
+let img;        // 플레이어 (옆모습)
 let imgFront;   // 정면
 let imgBack;    // 뒷모습
+let imgSit;     // ⭐ 유저-1 기본 착석
 let playerDir = "right";
 
 let playerScale = 300; // ⭐ 유저 NPC 크기
@@ -29,7 +30,7 @@ let cloudSpeed = 1;  // 구름은 훨씬 느리게
 let npcAnimationFrames = [];    // NPC 애니메이션 프레임 (2D 배열)
 let npcCurrentFrameIndex = [0, 0, 0, 0, 0, 0, 0]; // 각 NPC의 현재 프레임 인덱스
 let lastAnimationTime = 0;      // 마지막 애니메이션 시간
-let npcStandImgs = [];        // 서 있는 버전 이미지 (2번째 NPC용)
+let npcStandImgs = [];          // 서 있는 버전 이미지 (2번째 NPC용)
 let npcPositions = [];
 // 좌석 배치용 전역 값
 let seatBaseY = 520;
@@ -65,7 +66,38 @@ let isSitButtonHovered = false;
 let isSitButtonPressed = false;
 let sitButtonPressTime = 0;
 
+// ⭐ sit here 클릭 후 3초 뒤에 2번 NPC가 서도록 트리거 시간
+let npc2StandTriggerTime = null;
+
+// ⭐ 2번 NPC 걷기 관련 변수
+let npc2WalkSpeed = 2;
+let npc2WalkStartTime = null;     // 서고 난 뒤 걷기 시작 시점
+let npc2HasLeftScreen = false;    // 화면 밖으로 완전히 나갔는지
+
+// ⭐ 2번 좌석 관련
+let npc2OriginalSeatX = null;     // 원래 2번 좌석의 X (좌석 중심)
+let npc2SeatChosen = false;       // 유저가 2번 NPC를 sit here로 선택했는지
+let hoveredSitNpcIndex = -1;      // 현재 hover 중인 sit here 버튼의 NPC 인덱스
+
+// ⭐ 유저 자동 이동 관련 (지금은 안 써도 됨, false라서 동작 안 함)
+let isPlayerAutoMovingToSeat = false;
+let playerTargetX = null;
+
+// ⭐ 결과 에셋 및 상태
+let successImg;
+let failImg;
+let resultOverlayType = null;      // 'success' 또는 'fail'
+let resultOverlayStartTime = null; // SUCCESS/FAIL 표시 타이밍용
+
+// press enter 추가
+let pressEnterImg;      // Press "ENTER" 이미지
+let showPressEnter = true
+
+
 function gameScreenPreload() {
+  //press enter to start
+  pressEnterImg = loadImage("assets/start/pressenter.png");
+
   // 지하철 내부
   backgr = loadImage('assets/subwayBackground/낮(임산부석O) 창문 투명 - 대화창X.png');
   // 대화창 이미지
@@ -78,7 +110,8 @@ function gameScreenPreload() {
   // 플레이어
   img = loadImage('assets/userCharacter/유저-1 걷는 옆모습 모션 (1).png');
   imgFront = loadImage('assets/userCharacter/유저-1 정면 스탠딩.png');
-  imgBack  = loadImage('assets/userCharacter/유저-1 뒷모습.png')
+  imgBack  = loadImage('assets/userCharacter/유저-1 뒷모습.png');
+  imgSit   = loadImage('assets/userCharacter/유저-1 기본 착석.png'); // ⭐ 추가
 
   // NPC 애니메이션 프레임 로드
   npcAnimationFrames[0] = [
@@ -125,6 +158,10 @@ function gameScreenPreload() {
 
   // 역 이미지 로드
   stationImg = loadImage('assets/scenery/역_시청.png');
+
+  // ⭐ 결과 에셋 로드 (폴더명 result)
+  successImg = loadImage('assets/result/SUCCESS.png');
+  failImg    = loadImage('assets/result/FAIL.png');
 }
 
 function gameScreenSetup() {
@@ -138,6 +175,9 @@ function gameScreenSetup() {
       y: seatBaseY
     };
   }
+
+  // ⭐ 2번 좌석 원래 위치 저장 (왼쪽에서 두 번째, 좌석 중심 X)
+  npc2OriginalSeatX = npcPositions[1].x;
 }
 
 // Stage 2로 전환하는 헬퍼 함수
@@ -146,10 +186,28 @@ function enterStage2() {
   stage2StartTime = millis();
   isStationImgActive = false;
   selectedNpcIndex = -1;
+  showPressEnter = false;
 }
 
 function gameScreenDraw() {
   background(0);
+
+  // ⭐ sit here 클릭 후 3초가 지나면 2번 NPC 서기 (유저와 같은 키, 이후 걷기 타이밍 시작)
+  if (npc2StandTriggerTime !== null && millis() - npc2StandTriggerTime >= 3000) {
+    isNpc2Standing = true;
+    npc2StandTriggerTime = null;
+    npc2WalkStartTime = millis();   // 서 있는 시점 기록
+  }
+
+  // ⭐ 2번 NPC가 서 있고, 2초가 지난 뒤부터 왼쪽으로 걷기 시작 (화면에서 나갈 때까지)
+  if (
+    isNpc2Standing &&
+    npc2WalkStartTime !== null &&
+    millis() - npc2WalkStartTime >= 2000 &&
+    !npc2HasLeftScreen
+  ) {
+    npcPositions[1].x -= npc2WalkSpeed;
+  }
 
   // 플레이어는 배경(world) 기준 바닥에 고정
   y = backgr ? backgr.height - 80 : groundY;
@@ -228,6 +286,34 @@ function gameScreenDraw() {
   let worldMouseX = (mouseX / stageScale) - (scrollX - 50);
   let worldMouseY = (mouseY / stageScale) - (scrollY - 50 + worldShiftY + stage2YOffsetForMouse);
 
+  // ⭐ 2번 NPC가 화면에서 완전히 나갔는지 체크 + 결과 처리
+  if (
+    isNpc2Standing &&
+    !npc2HasLeftScreen &&
+    npcStandImgs[1]
+  ) {
+    let targetHeight = playerScale;
+    let scaleFactor = targetHeight / npcStandImgs[1].height;
+    let w = npcStandImgs[1].width * scaleFactor;
+
+    let rightWorld = npcPositions[1].x + w / 2;
+    let rightScreenX = (rightWorld + (scrollX - 50)) * stageScale;
+
+    if (rightScreenX < 0) {
+      npc2HasLeftScreen = true;
+
+      // 정답: 2번째 NPC를 골랐을 때 → 유저 착석 후 SUCCESS
+      if (npc2SeatChosen) {
+        playerDir = "sit";               // 유저 캐릭터 착석
+        resultOverlayType = "success";   // SUCCESS 오버레이
+        resultOverlayStartTime = millis();
+      } else {
+        // 오답: 다른 NPC를 골랐거나 선택 안 했을 때 → FAIL
+        resultOverlayType = "fail";
+        resultOverlayStartTime = millis();
+      }
+    }
+  }
 
   push();
   scale(stageScale);
@@ -238,7 +324,8 @@ function gameScreenDraw() {
   image(backgr, 0, 0, backgr.width, backgr.height);
 
   // NPC 그리기
-  isSitButtonHovered = false; // 매 프레임 호버 상태 초기화
+  isSitButtonHovered = false;       // 매 프레임 호버 상태 초기화
+  hoveredSitNpcIndex = -1;          // sit here 대상 NPC 인덱스 초기화
   for (let i = 0; i < npcAnimationFrames.length; i++) {
     const currentFrameIndex = npcCurrentFrameIndex[i];
     let imgToDraw = npcAnimationFrames[i][currentFrameIndex];
@@ -251,25 +338,47 @@ function gameScreenDraw() {
     drawNPC(imgToDraw, npcPositions[i].x, npcBottomWorldY, i, isHighlighted, worldMouseX, worldMouseY);
   }
 
-  // ⭐ 플레이어 그리기 (Y축 아래로 평행이동만 추가)
+  // ⭐ 플레이어 그리기
   let playerBottomY = npcBottomWorldY;
-  let playerTopY    = playerBottomY - playerScale;
 
   push();
   if (playerDir === "left") {
     // 왼쪽: 옆모습 뒤집기
+    let playerTopY = playerBottomY - playerScale;
     translate(x + playerScale, playerTopY + playerYShift);
     scale(-1, 1);
     image(img, 0, 0, playerScale, playerScale);
   } else if (playerDir === "right") {
     // 오른쪽: 옆모습 그대로
+    let playerTopY = playerBottomY - playerScale;
     image(img, x, playerTopY + playerYShift, playerScale, playerScale);
   } else if (playerDir === "front") {
     // 정면
+    let playerTopY = playerBottomY - playerScale;
     image(imgBack, x, playerTopY + playerYShift, playerScale, playerScale);
   } else if (playerDir === "back") {
     // 뒷모습
+    let playerTopY = playerBottomY - playerScale;
     image(imgFront, x, playerTopY + playerYShift, playerScale, playerScale);
+  } else if (playerDir === "sit") {
+    // ⭐ 착석 상태: 다른 앉아 있는 NPC와 동일한 사이즈 & y축 정렬
+    let sitHeight = npcTargetHeight;           // 앉은 NPC와 같은 높이
+    let sitScale  = sitHeight / imgSit.height;
+    let sitW      = imgSit.width * sitScale;
+    let sitH      = sitHeight;
+
+    // 바닥 기준으로 위로 sitHeight만큼 올려서 y 정렬
+    let sitTopY = playerBottomY - sitH;
+
+    // ⭐ 정답을 맞춘 경우: 시청 캐릭터가 앉아 있던 좌석 중심에 정확히 앉기
+    let sitX;
+    if (npc2SeatChosen && npc2OriginalSeatX !== null) {
+      sitX = npc2OriginalSeatX - sitW / 2;   // 좌석 중심 - 반 너비
+    } else {
+      sitX = x;
+    }
+
+    image(imgSit, sitX, sitTopY, sitW, sitH);
   }
   pop();
 
@@ -324,7 +433,7 @@ function gameScreenDraw() {
   }
   pop();
 
-    // ======= stage2 진입 후 10초가 지나면 역 도착 + stage1으로 전환 =======
+  // ======= stage2 진입 후 10초가 지나면 역 도착 + stage1으로 전환 =======
   if (stage === 2 && stage2StartTime !== null && !isStationImgActive) {
     if (millis() - stage2StartTime >= 10000) {
       isStationImgActive = true;  // drawOutside가 역 이미지만 그리게 됨
@@ -333,9 +442,56 @@ function gameScreenDraw() {
       stage2StartTime = null;     // 한 번만 실행되도록 리셋
     }
   }
+
+  // ⭐ SUCCESS / FAIL 오버레이 (2초 지연 후 화면 거의 중앙, 살짝 위쪽)
+  if (resultOverlayType && resultOverlayStartTime !== null) {
+    if (millis() - resultOverlayStartTime >= 2000) {
+      let overlayImg =
+        resultOverlayType === "success" ? successImg :
+        resultOverlayType === "fail"    ? failImg    : null;
+
+      if (overlayImg) {
+        let rw = overlayImg.width;
+        let rh = overlayImg.height;
+        let rx = (width  - rw) / 2;
+        let ry = (height - rh) / 2 - 200; // 중앙보다 약간 위로
+        image(overlayImg, rx, ry, rw, rh);
+      }
+    }
+  }
+
+   // ⭐⭐ 게임 시작 전 "PRESS SPACE" 오버레이
+  if (showPressEnter && stage === 1 && pressEnterImg) {
+    push();
+    // 화면 살짝 어둡게
+    noStroke();
+    fill(0, 0, 0, 150);
+    rect(0, 0, width, height);
+
+    // 안내 이미지 중앙(살짝 아래쪽)에 표시
+    imageMode(CENTER);
+    image(pressEnterImg, width / 2, height / 2 + 150);
+    pop();
+  }
+
 }
 
 function handlePlayerMovement() {
+  // ⭐ 좌석 앞으로 자동 이동 중일 때: (지금은 플래그가 안 켜져서 실행 안 됨)
+  if (isPlayerAutoMovingToSeat && playerTargetX !== null) {
+    const autoSpeed = 4;
+    if (Math.abs(x - playerTargetX) <= autoSpeed) {
+      x = playerTargetX;
+      isPlayerAutoMovingToSeat = false;
+      playerDir = "sit";  // 도착 후 착석
+    } else {
+      let dir = (playerTargetX > x) ? 1 : -1;
+      x += dir * autoSpeed;
+      playerDir = dir === 1 ? "right" : "left";
+    }
+    return;
+  }
+
   if (stage !== 1) { // Stage 1이 아닐 때만 좌우 이동 허용
     if (keyIsDown(LEFT_ARROW)) {
       x -= speed;
@@ -388,7 +544,7 @@ function drawOutside() {
     }
   }
 
-  if (isStationImgActive) {
+  if (isStationImgActive && stationImg) {
     let sw = 1024; // 고정된 가로 사이즈
     let sScale = sw / stationImg.width; // 비율 유지
     let sh = stationImg.height * sScale; // 세로 사이즈 계산
@@ -398,8 +554,6 @@ function drawOutside() {
   }
 }
 
-
-
 // =======================
 // NPC 렌더 (비율 통일)
 // =======================
@@ -407,7 +561,7 @@ function drawNPC(npcImg, baseX, baseY, index, isHighlighted, worldMouseX, worldM
   if (!npcImg) return;
 
   let targetHeight = npcTargetHeight;
-  let lift = 12; // 좌석 위에 살짝 띄우기
+  let lift = 12; // 좌석 위에 살짝 띄우기 (현재는 사용 안 하지만 일단 유지)
 
   let isStandingNpc2 = (index === 1 && isNpc2Standing && npcStandImgs[1] && npcImg === npcStandImgs[1]);
   if (isStandingNpc2) {
@@ -428,30 +582,20 @@ function drawNPC(npcImg, baseX, baseY, index, isHighlighted, worldMouseX, worldM
 
   // 하이라이트 효과 (캐릭터 외곽선)
   if (isHighlighted) {
-    // 가장 안정적인 방법: drawingContext를 사용하여 흰색 실루엣 생성
     let buffer = createGraphics(w, h);
     buffer.image(npcImg, 0, 0, w, h);
-    
-    // 'source-in' composite operation을 사용하여 기존 픽셀 위에만 색칠
     buffer.drawingContext.globalCompositeOperation = 'source-in';
-    
-    // 흰색으로 채우기
     buffer.fill(255);
     buffer.noStroke();
     buffer.rect(0, 0, w, h);
-    
-    // composite operation 리셋 (p5.js의 다른 그리기에 영향 없도록)
     buffer.drawingContext.globalCompositeOperation = 'source-over';
 
     const borderPx = 3;
-
-    // 흰색 실루엣을 상하좌우로 그려 테두리 효과를 냄
     image(buffer, drawX - borderPx, drawY, w, h);
     image(buffer, drawX + borderPx, drawY, w, h);
     image(buffer, drawX, drawY - borderPx, w, h);
     image(buffer, drawX, drawY + borderPx, w, h);
-    
-    buffer.remove(); // 메모리 누수 방지를 위해 버퍼 제거
+    buffer.remove();
   }
 
   // 원본 이미지를 위에 다시 그립니다.
@@ -466,9 +610,13 @@ function drawNPC(npcImg, baseX, baseY, index, isHighlighted, worldMouseX, worldM
     const sitX = drawX + (w - sitW) / 2;
     const sitY = drawY - sitH * 0.8;
 
-    const isCurrentlyHovered = (worldMouseX > sitX && worldMouseX < sitX + sitW && worldMouseY > sitY && worldMouseY < sitY + sitH);
+    const isCurrentlyHovered =
+      (worldMouseX > sitX && worldMouseX < sitX + sitW &&
+       worldMouseY > sitY && worldMouseY < sitY + sitH);
+
     if (isCurrentlyHovered) {
       isSitButtonHovered = true;
+      hoveredSitNpcIndex = index;   // ⭐ 어느 NPC의 sit here인지 기록
     }
 
     let imgToDraw = isCurrentlyHovered ? sitHereHoverImg : sitHereImg;
@@ -515,7 +663,7 @@ function gameScreenKeyPressed() {
     return;
   }
 
-  // 'n' 키: 2번 NPC 일어나기
+  // 'n' 키: 2번 NPC 일어나기 (수동 디버그용)
   if (key === 'n' || key === 'N') {
     isNpc2Standing = true;
   }
@@ -523,8 +671,6 @@ function gameScreenKeyPressed() {
 
 // =======================
 // 마우스 클릭
-// 1) 버튼 클릭 여부 먼저 체크해서 화면 전환
-// 2) 그 외 영역 클릭이면 기존 속도 증가 로직
 // =======================
 function gameScreenMousePressed() {
   // --- stop 버튼 ---
@@ -567,6 +713,20 @@ function gameScreenMousePressed() {
   if (isSitButtonHovered) {
     isSitButtonPressed = true;
     sitButtonPressTime = millis();
+    
+    // ⭐ sit here 클릭 시 바로 역 도착 풍경으로 전환
+    isStationImgActive = true;
+
+    // ⭐ sit here 클릭 시 3초 후 2번 NPC가 서도록 트리거
+    npc2StandTriggerTime = millis();
+
+    // ⭐ 만약 왼쪽에서 2번째 NPC(인덱스 1)를 선택한 경우에만 "정답" 처리
+    if (hoveredSitNpcIndex === 1) {
+      npc2SeatChosen = true;
+    } else {
+      npc2SeatChosen = false;
+    }
+
     return; // 다른 클릭 로직 방지
   }
 
