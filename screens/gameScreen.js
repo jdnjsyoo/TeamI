@@ -210,8 +210,8 @@ function enterStage2() {
 function gameScreenDraw() {
   background(0);
 
-  // sit here 클릭 후 3초가 지나면 2번 NPC 서기 (유저와 같은 키, 이후 걷기 타이밍 시작)
-  if (npc2StandTriggerTime !== null && millis() - npc2StandTriggerTime >= 3000) {
+  // sit here 클릭 후 2초가 지나면 2번 NPC 서기 (유저와 같은 키, 이후 걷기 타이밍 시작)
+  if (npc2StandTriggerTime !== null && millis() - npc2StandTriggerTime >= 2000) {
     isNpc2Standing = true;
     npc2StandTriggerTime = null;
     npc2WalkStartTime = millis();   // 서 있는 시점 기록
@@ -253,7 +253,15 @@ function gameScreenDraw() {
   } else {
     highlightedNpcIndex = -1; // stage 1에서는 실시간 하이라이트 없음
   }
-  x = constrain(x, 0, backgr.width - 350);
+
+  // 플레이어 x축 이동 범위 제한
+  let playerRightBoundary;
+  if (stage === 2) {
+    playerRightBoundary = backgr.width - 350;
+  } else {
+    playerRightBoundary = backgr.width - 350; // Stage 1 또는 다른 스테이지: 기존 경계
+  }
+  x = constrain(x, 0, playerRightBoundary);
 
   // 전역 스케일 변수
   const visibleSeats = 4; // 화면에 보이게 할 좌석 수
@@ -413,8 +421,8 @@ function gameScreenDraw() {
 
   // ======= 우측 상단 버튼 (스크린 좌표, 스케일/스크롤 영향 X) =======
   push();
-  const buttonWidth = 100;
-  const buttonHeight = 73;
+  const buttonWidth = 115;
+  const buttonHeight = 84;
   const buttonGap = 20;
   let buttonX = width - buttonWidth - 10; // 오른쪽 여백 10px
   const buttonY = 20; // 위쪽 여백 20px
@@ -474,8 +482,8 @@ function gameScreenDraw() {
     const shrinkingSourceWidth = timeBar.width * timeRatio;
 
     // Draw timer at top-left
-    const timerX = 20;
-    const timerY = -130;
+    const timerX = 360;
+    const timerY = -126;
     
     // Draw the resized base bar
     image(timeBarBase, timerX, timerY, newWidth, newHeight);
@@ -700,6 +708,12 @@ function gameScreenKeyPressed() {
     if (stage === 1) {
       // 1 → 2로 진입
       enterStage2();
+    } else if (stage === 2) {
+      // stage2 도중 스페이스바를 누르면 즉시 역 도착 풍경으로 전환
+      isStationImgActive = true;
+      stage = 1;
+      selectedNpcIndex = highlightedNpcIndex;
+      stage2StartTime = null;
     } else {
       // 2 → 1로 수동 복귀
       stage = 1;
@@ -790,4 +804,4 @@ function gameScreenMousePressed() {
 
     print("복귀 이후 속도:", speed);
   }, 1000);
-}
+};
