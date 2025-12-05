@@ -3,6 +3,8 @@ function drawOutside() {
 
   if (cityImg && !isStationImgActive) {
     let sScale = 0.55;
+    let yPos = outsideYOffset;
+    
     let sw = cityImg.width * sScale;
     let sh = cityImg.height * sScale;
 
@@ -11,7 +13,7 @@ function drawOutside() {
 
     const maxX = (stage === 2 && backgr) ? backgr.width : width;
     for (let xx = cityX; xx < maxX; xx += sw) {
-      image(cityImg, xx, outsideYOffset, sw, sh);
+      image(cityImg, xx, yPos, sw, sh);
     }
   }
 

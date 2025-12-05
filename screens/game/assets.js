@@ -1,4 +1,6 @@
 function gameScreenPreload() {
+  initializeStationAssets(); // 랜덤 역 선택 및 관련 에셋 로드
+
   //press enter to start
   pressEnterImg = loadImage("assets/start/pressenter.png");
 
@@ -6,10 +8,6 @@ function gameScreenPreload() {
   backgr = loadImage('assets/subwayBackground/낮(임산부석O) 창문 투명 - 대화창X.png');
   // 대화창 이미지
   dialogImg = loadImage('assets/subwayBackground/대화창.png');
-
-  // 창밖 풍경
-  cityImg  = loadImage('assets/scenery/시청1.png');
-  cloudImg = loadImage('assets/scenery/구름.png');
 
   // 플레이어
   img = loadImage('assets/userCharacter/유저-1 걷는 옆모습 모션 (1).png');
@@ -59,9 +57,6 @@ function gameScreenPreload() {
   settingButton = loadImage('assets/buttons/setting_투명.png');
   sitHereImg = loadImage('assets/buttons/sit_here.png');
   sitHereHoverImg = loadImage('assets/buttons/sit_here_hover.png');
-
-  // 역 이미지 로드
-  stationImg = loadImage('assets/scenery/역_시청.png');
 
   // ⭐ 결과 에셋 로드 (폴더명 result)
   successImg = loadImage('assets/result/SUCCESS.png');

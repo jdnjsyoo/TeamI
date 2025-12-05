@@ -141,3 +141,14 @@ function gameScreenDraw() {
     }
   }
 }
+
+// 랜덤으로 역을 선택하고 관련 에셋을 로드하는 함수
+function initializeStationAssets() {
+  const randomIndex = floor(random(stations.length));
+  currentStationName = stations[randomIndex];
+
+  // 도시 배경 로드 (예: '강남.png')
+  cityImg = loadImage(`assets/scenery/${currentStationName}.png`);
+  // 역 이미지 로드 (예: '역_강남.PNG')
+  stationImg = loadImage(`assets/scenery/역_${currentStationName}.PNG`);
+}
