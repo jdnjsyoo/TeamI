@@ -23,7 +23,7 @@ let facingLeft = false;
 // 창밖 패럴럭스용 변수
 let cityX = 0;
 let cloudX = 0;
-let citySpeed = 8;   // 도시 속도
+let citySpeed = 4;   // 도시 속도
 let cloudSpeed = 1;  // 구름은 훨씬 느리게
 
 // NPC 7명
