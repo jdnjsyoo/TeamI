@@ -188,6 +188,8 @@ class Round1 {
         }
       } else if ((key === 'n' || key === 'N') && this.resultScriptPlayer.isFinished()) {
         // TODO: Round 2로 넘어가는 로직
+        if (typeof switchToRound2 === "function") {
+        switchToRound2();}
         console.log("Switching to Round 2!");
       }
       return false;

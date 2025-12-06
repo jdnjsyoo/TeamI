@@ -10,7 +10,10 @@ function updateNpcAnimations(round) {
     }
 }
 
+
+
 function handleNpcBehavior(round, worldGroundY, scrollX, stageScale) {
+     if (round.isRound2) return;
     // sit here 클릭 후 2초가 지나면 2번 NPC 서기 (유저와 같은 키, 이후 걷기 타이밍 시작)
     if (round.npc2StandTriggerTime !== null && millis() - round.npc2StandTriggerTime >= 2000) {
         round.isNpc2Standing = true;
@@ -67,6 +70,14 @@ function drawNpcs(round, worldMouseX, worldMouseY) {
     round.isSitButtonHovered = false;       // 매 프레임 호버 상태 초기화
     round.hoveredSitNpcIndex = -1;          // sit here 대상 NPC 인덱스 초기화
     for (let i = 0; i < npcAnimationFrames.length; i++) {
+      
+      //라운드 2(=stage3)에서는 6명
+      if (round.isRound2 && i === 6) {
+          continue;
+        }
+        //
+
+
         const currentFrameIndex = round.npcCurrentFrameIndex[i];
         let imgToDraw = npcAnimationFrames[i][currentFrameIndex];
 

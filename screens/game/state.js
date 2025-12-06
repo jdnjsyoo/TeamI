@@ -44,6 +44,8 @@ let currentStationName; // 랜덤으로 선택된 역 이름
 const stations = ['강남', '강변', '성수', '시청', '을지로', '잠실', '홍대']; // 지하철역 목록
 
 // 버튼 이미지
+
+let sitArrowImg; 
 let stopButton, quitButton, settingButton, gameScore;
 // 버튼 히트박스(스크린 좌표 기준)
 let stopBtnX, stopBtnY, stopBtnW, stopBtnH;
@@ -103,3 +105,7 @@ const stage2Duration = 10000; // 10 seconds
 let timerStartTime;
 
 let dungGeunMoFont; // 모든 라운드에서 사용할 폰트
+
+
+// 2라운드
+let isTargetArrowHovered = false;

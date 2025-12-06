@@ -31,7 +31,7 @@ function gameScreenKeyPressed() {
 
   // 'n' 키: 2번 NPC 일어나기 (수동 디버그용)
   if (key === 'n' || key === 'N') {
-    isNpc2Standing = true;
+    startRound2()
   }
 }
 
@@ -97,16 +97,32 @@ function gameScreenMousePressed() {
   }
 
   // --- 버튼이 아닌 곳 클릭 → 기존 속도 증가 로직 ---
-  speed += boostAmount;
-  if (speed > maxBoost) speed = maxBoost;
+  // 2라운드에서만 동작하도록 옮겼습니당
+    if (stage === 3) {
+      
+    // 1) 화살표 위를 클릭했다 → 성공!
+    if (isTargetArrowHovered && !round2Finished) {
+      const seatX = npcPositions[targetSeatIndex].x;
 
-  print("현재 속도:", speed);
+      round2Finished = true;
+      round2Result = "success";
 
-  setTimeout(() => {
-    speed -= boostAmount;
+      // 플레이어를 좌석 위치에 맞추고 앉히기
+    
+      x = seatX 
+      isPlayerAutoMovingToSeat = false;
+      playerTargetX = null;
+      playerDir = "sit";
 
-    if (speed < baseSpeed) speed = baseSpeed;
+      resultOverlayType = "success";
+      resultOverlayStartTime = millis();
 
-    print("복귀 이후 속도:", speed);
-  }, 1000);
+      console.log("ROUND 2 SUCCESS: clicked arrow!");
+
+      return;
+    }
+
+    boostSpeed();  
+    return;
+  }
 };
