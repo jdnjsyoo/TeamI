@@ -16,40 +16,39 @@ function gameScreenPreload() {
   imgSit   = loadImage('assets/userCharacter/유저-1 기본 착석.png'); // ⭐ 추가
 
   // NPC 애니메이션 프레임 로드
+
   npcAnimationFrames[0] = [
-    loadImage('assets/npcChracter/홍대-1 기본 착석.png'),
-    loadImage('assets/npcChracter/홍대-1 모션 (1).png'),
-    loadImage('assets/npcChracter/홍대-1 모션 (2).png')
+    loadImage('assets/npcChracter/sitting/홍대_애니_1.png'),
+    loadImage('assets/npcChracter/sitting/홍대_애니_2.png'),
+    loadImage('assets/npcChracter/sitting/홍대_애니_3.png')
   ];
   npcAnimationFrames[1] = [
-    loadImage('assets/npcChracter/시청-2 모션.png'),
-    loadImage('assets/npcChracter/시청-2 힌트 전광판.png')
+    loadImage('assets/npcChracter/sitting/시청_서류_1.png'),
+    loadImage('assets/npcChracter/hint/시청_서류_힌트.png')
   ];
   npcAnimationFrames[2] = [
-    loadImage('assets/npcChracter/강남-1 모션 (1).png'),
-    loadImage('assets/npcChracter/강남-1 모션 (2).png')
+    loadImage('assets/npcChracter/sitting/강남_직장인_1.png'),
+    loadImage('assets/npcChracter/sitting/강남_직장인_2.png')
   ];
   npcAnimationFrames[3] = [
-    loadImage('assets/npcChracter/강변 군인1.png'),
-    loadImage('assets/npcChracter/강변 군인2.png')
+    loadImage('assets/npcChracter/sitting/강변_군인_1.png'),
+    loadImage('assets/npcChracter/sitting/강변_군인_2.png')
   ];
   npcAnimationFrames[4] = [
-    loadImage('assets/npcChracter/서울대입구-1 모션 (1).png'),
-    loadImage('assets/npcChracter/서울대입구-1 모션 (2).png')
+    loadImage('assets/npcChracter/sitting/서울대입구_책_1.png'),
+    loadImage('assets/npcChracter/sitting/서울대입구_책_2.png')
   ];
   npcAnimationFrames[5] = [
-    loadImage('assets/npcChracter/성수-1 기본 착석.png'),
-    loadImage('assets/npcChracter/성수-1 모션 (1).png'),
-    loadImage('assets/npcChracter/성수-1 모션 (2).png')
+    loadImage('assets/npcChracter/sitting/성수_쇼핑백_2.png'),
+    loadImage('assets/npcChracter/sitting/성수_쇼핑백_3.png')
   ];
   npcAnimationFrames[6] = [
-    loadImage('assets/npcChracter/잠실 쇼핑1.png'),
-    loadImage('assets/npcChracter/잠실 쇼핑2.png'),
-    loadImage('assets/npcChracter/잠실 쇼핑3.png')
+    loadImage('assets/npcChracter/sitting/잠실_코트_1.png'),
+    loadImage('assets/npcChracter/sitting/잠실_코트_2.png')
   ];
 
   // 두 번째 NPC의 "서 있는" 이미지
-  npcStandImgs[1] = loadImage('assets/npcChracter/시청-2 정면 스탠딩.png');
+  npcStandImgs[1] = loadImage('assets/npcChracter/standing/시청_서류_스탠딩.png');
 
   // 버튼 이미지 로드
   stopButton = loadImage('assets/buttons/stop_투명.png');
