@@ -59,6 +59,7 @@ function gameScreenPreload() {
   settingButton = loadImage('assets/buttons/setting_투명.png');
   sitHereImg = loadImage('assets/buttons/sit_here.png');
   sitHereHoverImg = loadImage('assets/buttons/sit_here_hover.png');
+  sitArrowImg = loadImage("assets/buttons/sit_arrow.png")
 
   // ⭐ 결과 에셋 로드 (폴더명 result)
   successImg = loadImage('assets/result/SUCCESS.png');

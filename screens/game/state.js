@@ -45,6 +45,7 @@ const stations = ['강남', '강변', '성수', '시청', '을지로', '잠실',
 
 // 버튼 이미지
 let stopButton, quitButton, settingButton;
+let sitArrowImg; 
 // 버튼 히트박스(스크린 좌표 기준)
 let stopBtnX, stopBtnY, stopBtnW, stopBtnH;
 let quitBtnX, quitBtnY, quitBtnW, quitBtnH;
@@ -103,3 +104,7 @@ const stage2Duration = 10000; // 10 seconds
 let timerStartTime;
 
 let dungGeunMoFont; // 모든 라운드에서 사용할 폰트
+
+
+// 2라운드
+let isTargetArrowHovered = false;

@@ -11,6 +11,8 @@ function updateNpcAnimations() {
 }
 
 function handleNpcBehavior(worldGroundY, scrollX, stageScale) {
+    if (stage === 3) return;
+
     // sit here 클릭 후 2초가 지나면 2번 NPC 서기 (유저와 같은 키, 이후 걷기 타이밍 시작)
     if (npc2StandTriggerTime !== null && millis() - npc2StandTriggerTime >= 2000) {
         isNpc2Standing = true;
@@ -66,6 +68,13 @@ function drawNpcs(worldMouseX, worldMouseY) {
     isSitButtonHovered = false;       // 매 프레임 호버 상태 초기화
     hoveredSitNpcIndex = -1;          // sit here 대상 NPC 인덱스 초기화
     for (let i = 0; i < npcAnimationFrames.length; i++) {
+      
+      //라운드 2(=stage3)에서는 6명
+      if (stage === 3 && i === 6) {
+          continue;
+        }
+        //
+
         const currentFrameIndex = npcCurrentFrameIndex[i];
         let imgToDraw = npcAnimationFrames[i][currentFrameIndex];
 
