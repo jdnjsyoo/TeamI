@@ -1,16 +1,18 @@
+// Animation parameters
+const ANIMATION_FRAME_RATE = 10; // milliseconds per frame
+const HINT_ANIMATION_INTERVAL = 3000; // how often hint appears for correct NPC
+
 function updateNpcAnimations(round) {
-    // NPC 애니메이션 프레임 업데이트
-    if (millis() - round.lastAnimationTime > 500) {
-        for (let i = 0; i < 7; i++) {
-        if (npcAnimationFrames[i] && npcAnimationFrames[i].length > 0) {
-            round.npcCurrentFrameIndex[i] = (round.npcCurrentFrameIndex[i] + 1) % npcAnimationFrames[i].length;
-        }
-        }
-        round.lastAnimationTime = millis();
-    }
-}
-
-
+  // Ensure lastAnimationTime is initialized
+  if (round.lastAnimationTime === undefined) {
+    round.lastAnimationTime = millis();
+    // Initialize lastHintTime for correct NPCs
+    round.npcs.forEach(npc => {
+      if (npc.isCorrect) {
+        npc.lastHintTime = millis();
+      }
+    });
+  }
 
 function handleNpcBehavior(round, worldGroundY, scrollX, stageScale) {
      if (round.isRound2) return;
@@ -58,10 +60,26 @@ function handleNpcBehavior(round, worldGroundY, scrollX, stageScale) {
                 round.resultOverlayType = "fail";
                 round.resultOverlayStartTime = millis();
             }
+          } else if (npc.currentAnimationState === 'hint') {
+            // Check if hintImg exists before transitioning back
+            if (!npc.hintImg) { // Fallback if no hint image is loaded
+              npc.currentAnimationState = 'sitting';
+            } else if (millis() - npc.lastHintTime > HINT_ANIMATION_INTERVAL / 3) { // Show hint for a shorter time
+                npc.currentAnimationState = 'sitting';
+            }
+          }
+        } else {
+          // Incorrect NPC: only sitting animation
+          npc.currentSittingFrame = (npc.currentSittingFrame + 1) % npc.sittingImgs.length;
         }
-    }
-}
+      }
+    };
+    round.lastAnimationTime = millis();
+  
 
+// NPC movement parameters
+const NPC_STAND_DURATION = 1000; // Time NPC stands before walking
+const NPC_WALK_SPEED = 2; // Pixels per frame
 
 function drawNpcs(round, worldMouseX, worldMouseY) {
     let npcBottomWorldY = backgr ? backgr.height - 80 : height - 50;
@@ -171,12 +189,22 @@ function drawNPC(round, npcImg, baseX, baseY, index, isHighlighted, worldMouseX,
         return; // 상태가 바뀌므로 더 이상 그리지 않음
       }
     }
-    
-    const finalW = sitW * scaleMod;
-    const finalH = sitH * scaleMod;
-    const finalX = sitX + (sitW - finalW) / 2;
-    const finalY = sitY + (sitH - finalH) / 2;
 
-    image(imgToDraw, finalX, finalY, finalW, finalH);
-  }
+    if (npc.isStanding && npc.walkStartTime && !npc.hasLeftScreen) {
+      // NPC stands for a moment, then walks off
+      if (millis() - npc.walkStartTime > NPC_STAND_DURATION) {
+        // Move NPC off screen
+        // Initialize currentX if it's the first time moving
+        if (npc.currentX === undefined) npc.currentX = npc.originalSeatX;
+        
+        npc.currentX -= NPC_WALK_SPEED;
+
+        // Check if NPC has left the screen (e.g., beyond a certain X coordinate)
+        // This threshold might need adjustment based on scene scale and NPC width
+        if (npc.currentX < worldScrollX - 200) { // 200 pixels off-screen to the left
+          npc.hasLeftScreen = true;
+        }
+      }
+    }
+  };
 }

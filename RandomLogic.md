@@ -17,3 +17,7 @@
 round가 진행되는 동안 각각의 npc들은 sitting 모션을 반복한다.
 - 정답 npc(1인): /assets/npcChracter/sitting 폴더의 해당 npc에 대한 이미지(2~3)와 /assets/npcChracter/hint 폴더의 해당 npc에 대한 이미지를 번갈아 나타나게 한다. 예를 들어, 강남_직장인 npc는 강남_직장인_1, 강남_직장인_2, 강남_직장인_힌트가 번갈아가며 화면에 나타난다.
 - 오답 npc(6인): /assets/npcChracter/sitting 폴더의 해당 npc에 대한 이미지(2~3)를 번갈아 나타나게 한다. 예를 들어, 강남_직장인 npc는 강남_직장인_1과 강남_직장인_2이 번갈아가며 화면에 나타난다.
+
+## npc 선택 후
+플레이어가 sit_here 버튼을 클릭하면 선택된 npc가 일어난다.(/assets/npcChracter/standing에서 해당 npc의 이미지)
+일어나서 화면 바깥으로 나간다.(현재 코드에 있음)

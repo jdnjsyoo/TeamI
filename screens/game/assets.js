@@ -1,4 +1,33 @@
 let round1Scripts;
+let gameNpcs = []; // Global array to store generated NPC data
+
+// Define the available station and spec combinations
+const stationSpecs = {
+  "강남": ["직장인", "화장"],
+  "강변": ["군인", "백팩", "캐리어"],
+  "서울대입구": ["잠", "책"],
+  "성수": ["쇼핑백", "폰"],
+  "시청": ["서류", "집회"],
+  "을지로": ["외국인", "힙합"],
+  "잠실": ["코트", "학생"],
+  "홍대": ["애니", "탈색"]
+};
+
+// Define frame counts for sitting animations where they are not 3
+const sittingFrameCounts = {
+  "강남_직장인": 2, // '강남_직장인' only has _1 and _2
+  "시청_집회": 2,   // '시청_집회' only has _1 and _2
+  "잠실_코트": 2,   // '잠실_코트' only has _1 and _2
+  "강변_군인": 2,   // '강변_군인' only has _1 and _2
+  "서울대입구_잠": 2, // '서울대입구_잠' only has _1 and _2
+  "서울대입구_책": 2,
+  "을지로_외국인": 2, // '을지로_외국인' only has _1 and _2
+  "강남_화장": 2,   // '강남_화장' only has _1 and _2
+  "잠실_학생": 2,   // '잠실_학생' only has _1 and _2
+  "성수_폰": 2,     // '성수_폰' only has _1 and _2
+  "강변_백팩": 2,   // '강변_백팩' only has _1 and _2
+  // Add other exceptions here as needed
+};
 
 function initializeStationAssets() {
   // 역 관련 에셋
@@ -9,6 +38,88 @@ function initializeStationAssets() {
   stationImg = loadImage(`assets/scenery/역_${currentStationName}.PNG`);
   cityImg = loadImage(`assets/scenery/${currentStationName}.png`);
   cloudImg = loadImage('assets/scenery/구름.png'); // 구름 이미지는 공통
+}
+
+function generateRandomNpcs() {
+  gameNpcs = []; // Clear previous NPCs
+  const allStations = Object.keys(stationSpecs);
+  
+  // Select 7 unique stations
+  let selectedStations = [currentStationName];
+  let availableStations = allStations.filter(s => s !== currentStationName);
+  
+  // Shuffle available stations and pick 6 more
+  for (let i = availableStations.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [availableStations[i], availableStations[j]] = [availableStations[j], availableStations[i]];
+  }
+  selectedStations = selectedStations.concat(availableStations.slice(0, 6));
+
+  // Shuffle the final selected stations to randomize seat order
+  for (let i = selectedStations.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [selectedStations[i], selectedStations[j]] = [selectedStations[j], selectedStations[i]];
+  }
+
+  // Generate NPC objects
+  selectedStations.forEach(station => {
+    const specsForStation = stationSpecs[station];
+    const randomSpec = random(specsForStation); // Pick a random spec for the chosen station
+    const isCorrectNpc = (station === currentStationName);
+
+    let sittingImgs = [];
+    // Determine max frames for this NPC type, default to 3 if not specified
+    const npcKey = `${station}_${randomSpec}`;
+    const maxFrames = sittingFrameCounts[npcKey] !== undefined ? sittingFrameCounts[npcKey] : 3;
+
+    // Load sitting images up to maxFrames
+    for (let i = 1; i <= maxFrames; i++) {
+      const path = `assets/npcChracter/sitting/${station}_${randomSpec}_${i}.png`;
+      console.log(`Loading sitting image: ${path}`);
+      let img = loadImage(path, 
+        () => { /* success callback */ }, 
+        (event) => { console.error(`Failed to load sitting image ${path}:`, event); }
+      );
+      if (img && img.width > 0 && img.height > 0) { 
+        sittingImgs.push(img);
+      }
+    }
+    // Ensure sittingImgs has at least 2 frames as per spec (2-3 frames)
+    if (sittingImgs.length < 2) {
+      console.error(`Insufficient sitting images for ${station}_${randomSpec}. Expected at least 2, found ${sittingImgs.length}. This might lead to animation issues.`);
+      // Fallback or error handling if not enough images are found.
+      // For now, proceed with what's loaded, but this is a potential issue.
+    }
+
+
+    let hintImg = null;
+    if (isCorrectNpc) {
+      const path = `assets/npcChracter/hint/${station}_${randomSpec}_힌트.png`;
+      console.log(`Loading hint image: ${path}`);
+      hintImg = loadImage(path, 
+        () => { /* success callback */ }, 
+        (event) => { console.error(`Failed to load hint image ${path}:`, event); }
+      );
+    }
+
+    const standingImg = loadImage(`assets/npcChracter/standing/${station}_${randomSpec}_스탠딩.png`,
+      () => { /* success callback */ }, 
+      (event) => { console.error(`Failed to load standing image assets/npcChracter/standing/${station}_${randomSpec}_스탠딩.png:`, event); }
+    );
+    console.log(`Loading standing image: assets/npcChracter/standing/${station}_${randomSpec}_스탠딩.png`);
+
+    gameNpcs.push({
+      station: station,
+      spec: randomSpec,
+      isCorrect: isCorrectNpc,
+      sittingImgs: sittingImgs,
+      hintImg: hintImg,
+      standingImg: standingImg,
+      // Add a placeholder for current animation frame index and state
+      currentSittingFrame: 0, 
+      currentAnimationState: 'sitting' // 'sitting' or 'hint'
+    });
+  });
 }
 
 function gameScreenPreload() {
@@ -34,40 +145,8 @@ function gameScreenPreload() {
   imgBack  = loadImage('assets/userCharacter/유저-1 뒷모습.png');
   imgSit   = loadImage('assets/userCharacter/유저-1 기본 착석.png'); // ⭐ 추가
 
-  // NPC 애니메이션 프레임 로드
-
-  npcAnimationFrames[0] = [
-    loadImage('assets/npcChracter/sitting/홍대_애니_1.png'),
-    loadImage('assets/npcChracter/sitting/홍대_애니_2.png'),
-    loadImage('assets/npcChracter/sitting/홍대_애니_3.png')
-  ];
-  npcAnimationFrames[1] = [
-    loadImage('assets/npcChracter/sitting/시청_서류_1.png'),
-    loadImage('assets/npcChracter/hint/시청_서류_힌트.png')
-  ];
-  npcAnimationFrames[2] = [
-    loadImage('assets/npcChracter/sitting/강남_직장인_1.png'),
-    loadImage('assets/npcChracter/sitting/강남_직장인_2.png')
-  ];
-  npcAnimationFrames[3] = [
-    loadImage('assets/npcChracter/sitting/강변_군인_1.png'),
-    loadImage('assets/npcChracter/sitting/강변_군인_2.png')
-  ];
-  npcAnimationFrames[4] = [
-    loadImage('assets/npcChracter/sitting/서울대입구_책_1.png'),
-    loadImage('assets/npcChracter/sitting/서울대입구_책_2.png')
-  ];
-  npcAnimationFrames[5] = [
-    loadImage('assets/npcChracter/sitting/성수_쇼핑백_2.png'),
-    loadImage('assets/npcChracter/sitting/성수_쇼핑백_3.png')
-  ];
-  npcAnimationFrames[6] = [
-    loadImage('assets/npcChracter/sitting/잠실_코트_1.png'),
-    loadImage('assets/npcChracter/sitting/잠실_코트_2.png')
-  ];
-
-  // 두 번째 NPC의 "서 있는" 이미지
-  npcStandImgs[1] = loadImage('assets/npcChracter/standing/시청_서류_스탠딩.png');
+  // NPC 에셋 로드
+  generateRandomNpcs(); // Call the new function to generate and load random NPCs
 
   // 버튼 이미지 로드
   stopButton = loadImage('assets/buttons/stop_투명.png');

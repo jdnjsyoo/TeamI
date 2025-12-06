@@ -26,22 +26,13 @@ let cloudX = 0;
 let citySpeed = 4;   // 도시 속도
 let cloudSpeed = 1;  // 구름은 훨씬 느리게
 
-// NPC 7명
-let npcAnimationFrames = [];    // NPC 애니메이션 프레임 (2D 배열)
-let npcCurrentFrameIndex = [0, 0, 0, 0, 0, 0, 0]; // 각 NPC의 현재 프레임 인덱스
-let lastAnimationTime = 0;      // 마지막 애니메이션 시간
-let npcStandImgs = [];          // 서 있는 버전 이미지 (2번째 NPC용)
-let npcPositions = [];
-// 좌석 배치용 전역 값
-let seatBaseY = 520;
-let startX = 230;
-let seatSpacing = 95;
+// NPC 관련 변수는 이제 round 객체 안에 있습니다.
 let npcTargetHeight = 280;   // 잠실/군인 정도 키로 통일
 
-let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부
+let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부 (이 변수도 더 이상 사용하지 않지만, 기존 코드 호환을 위해 남겨둠)
 let stage = 1; // 1 or 2
 let currentStationName; // 랜덤으로 선택된 역 이름
-const stations = ['강남', '강변', '성수', '시청', '을지로', '잠실', '홍대']; // 지하철역 목록
+// let stations = ['강남', '강변', '성수', '시청', "서울대입구" '을지로', '잠실', '홍대']; // 지하철역 목록 (assets.js에서 관리)
 
 // 버튼 이미지
 
@@ -70,15 +61,15 @@ let isSitButtonHovered = false;
 let isSitButtonPressed = false;
 let sitButtonPressTime = 0;
 
-// sit here 클릭 후 3초 뒤에 2번 NPC가 서도록 트리거 시간
+// sit here 클릭 후 3초 뒤에 2번 NPC가 서도록 트리거 시간 (이 변수도 더 이상 사용하지 않지만, 기존 코드 호환을 위해 남겨둠)
 let npc2StandTriggerTime = null;
 
-// 2번 NPC 걷기 관련 변수
+// 2번 NPC 걷기 관련 변수 (이 변수들도 더 이상 사용하지 않지만, 기존 코드 호환을 위해 남겨둠)
 let npc2WalkSpeed = 2;
 let npc2WalkStartTime = null;     // 서고 난 뒤 걷기 시작 시점
 let npc2HasLeftScreen = false;    // 화면 밖으로 완전히 나갔는지
 
-// 2번 좌석 관련
+// 2번 좌석 관련 (이 변수들도 더 이상 사용하지 않지만, 기존 코드 호환을 위해 남겨둠)
 let npc2OriginalSeatX = null;     // 원래 2번 좌석의 X (좌석 중심)
 let npc2SeatChosen = false;       // 유저가 2번 NPC를 sit here로 선택했는지
 let hoveredSitNpcIndex = -1;      // 현재 hover 중인 sit here 버튼의 NPC 인덱스
