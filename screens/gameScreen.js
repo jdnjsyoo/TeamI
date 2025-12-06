@@ -47,4 +47,3 @@ function gameScreenMousePressed() {
     round2_instance.mousePressed();
   }
 }
-}

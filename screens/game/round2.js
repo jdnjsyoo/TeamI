@@ -87,10 +87,8 @@ class Round2 {
     // handleNpcBehavior(this, ...)  // 라운드2에서는 자리양보 연출 없음
 
     this.y = backgr ? backgr.height - 80 : groundY;
-
-    // 지하철 내부 배경
     this.environment.display(false, 2);
-    image(backgr, 0, 0, backgr.width, backgr.height);
+
 
     // 플레이어 이동
     this.handleMovement();
