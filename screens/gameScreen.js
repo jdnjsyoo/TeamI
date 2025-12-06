@@ -1,5 +1,19 @@
 // 전역 변수 - Round1 클래스 인스턴스를 담을 변수
-let round1_instance;
+
+let currentRound = 1;
+let round1_instance = null;
+let round2_instance = null;
+
+// Round2로 넘어갈 때 호출할 헬퍼 (Round1에서 부름)
+function switchToRound2() {
+  currentRound = 2;
+
+  if (!round2_instance) {
+    round2_instance = new Round2();
+    round2_instance.setup();
+  }
+  console.log("=== SWITCH TO ROUND 2 ===");
+}
 
 // gameScreenPreload 함수는 screens/game/assets.js 파일에 있습니다.
 
@@ -10,148 +24,27 @@ function gameScreenSetup() {
 }
 
 function gameScreenDraw() {
-  background(0);
-
-  const worldGroundY = backgr ? backgr.height - 80 : height - 50;
-
-  // 1. 상태 업데이트
-  updateNpcAnimations();
-  handleNpcBehavior(worldGroundY,-x + (width / 4 + 20), (stage === 1) ? 1.2 : (width / (4 * seatSpacing)));
-
-
-  // 플레이어는 배경(world) 기준 바닥에 고정
-  y = backgr ? backgr.height - 80 : groundY;
-
-  // Stage 1: 창밖 풍경은 화면 좌표로 렌더(월드 변환 이전)
-  if (stage === 1) drawOutside();
-  
-  //가영 라운드2 수정중
-  
-  handlePlayerMovement();         // 1라운드 이동
-  
-  if (stage === 3 && !round2Finished) {
-    const targetX = npcPositions[targetSeatIndex].x;
-    if (x >= targetX) {
-      round2Finished = true;
-      round2Result = "success";
-
-      x = targetX;
-      playerDir = "sit";
-      resultOverlayType = "success";
-      resultOverlayStartTime = millis();
-
-      console.log("ROUND 2 SUCCESS: reached seat 7!");
-    }
-  }
-  //여기까지
-
-  // stage 2에서 플레이어 위치에 따라 NPC 하이라이트
-  if (stage === 2) {
-    const firstNpcX = startX; // npcPositions[0].x와 동일
-    const sectionWidth = seatSpacing;
-    const rangeStart = firstNpcX - sectionWidth / 2 - 115;
-
-    // 플레이어의 x 좌표가 전체 NPC 구간 내에 있는지 확인
-    const numNpcs = 7;
-    const rangeEnd = rangeStart + sectionWidth * numNpcs;
-
-    highlightedNpcIndex = -1; // 매 프레임 초기화
-    if (x >= rangeStart && x < rangeEnd) {
-      const relativeX = x - rangeStart;
-      const index = Math.floor(relativeX / sectionWidth);
-      highlightedNpcIndex = constrain(index, 0, numNpcs - 1);
-    }
-  } else {
-    highlightedNpcIndex = -1; // stage 1에서는 실시간 하이라이트 없음
-  }
-
-  // 플레이어 x축 이동 범위 제한
-  let playerRightBoundary;
-  if (stage === 2) {
-    playerRightBoundary = backgr.width - 350;
-  } else {
-    playerRightBoundary = backgr.width - 350; // Stage 1 또는 다른 스테이지: 기존 경계
-  }
-  x = constrain(x, 0, playerRightBoundary);
-
-  // 전역 스케일 변수
-  const visibleSeats = 4; // 화면에 보이게 할 좌석 수
-  let stageScale = (stage === 1) ? 1.2 : (width / (visibleSeats * seatSpacing));
-  if (stage === 2|| stage === 3) stageScale *= 0.92;
-  stageScale = constrain(stageScale, 1.2, 4.0);
-
-  let offsetX = width / 4 + 20;
-  let offsetY = height / 4 + 20;
-
-  let scrollX, scrollY;
-  if (stage === 2|| stage === 3) {
-    // Stage 2: camera follows player
-    scrollX = -x + offsetX;
-    scrollY = -y + offsetY;
-  } else {
-    // Stage 1: camera fixed to leftmost position
-    scrollX = -0 + offsetX;
-    scrollY = -y + offsetY;
-  }
-
-  // 카메라 스크롤 제한 (stageScale 고려)
-  scrollX = constrain(scrollX, -backgr.width + width / stageScale, 0);
-  scrollY = constrain(scrollY, -backgr.height + height / stageScale, 0);
-
-  // ======= 화면 최상단 빈 공간 제거 (world y shift) =======
-  let topScreenY = (scrollY - 50) * stageScale; // 배경의 화면 상단 Y 좌표
-  let worldShiftY = 0;
-  if (topScreenY > 0) {
-    worldShiftY = -topScreenY / stageScale;
-  }
-  
-  // 마우스 좌표를 월드 좌표로 변환
-  const stage2YOffsetForMouse = (stage === 2|| stage === 3) ? 100 : 0;
-  let worldMouseX = (mouseX / stageScale) - (scrollX - 50);
-  let worldMouseY = (mouseY / stageScale) - (scrollY - 50 + worldShiftY + stage2YOffsetForMouse);
-
-  push();
-  scale(stageScale);
-  const stage2YOffset = (stage === 2|| stage === 3) ? 100 : 0; // Stage 2일 때 전체를 약간 아래로
-  translate(scrollX - 50, scrollY - 50 + worldShiftY + stage2YOffset);
-  
-  if (stage === 2|| stage === 3) drawOutside();
-
-  image(backgr, 0, 0, backgr.width, backgr.height);
-
-  // 2. 월드 그리기
-  const npcBottomY = drawNpcs(worldMouseX, worldMouseY);
-  drawRound2Arrow(worldMouseX, worldMouseY, npcBottomY);
-  drawPlayer(npcBottomY);
-  
-  pop(); // world transform 끝
-
-  // 3. UI 그리기
-  drawUi();
-
-  // 4. 스테이지 전환 로직
-  // ======= stage2 진입 후 10초가 지나면 역 도착 + stage1으로 전환 =======
-  if (stage === 2 && stage2StartTime !== null && !isStationImgActive) {
-    if (millis() - stage2StartTime >= 10000) {
-      isStationImgActive = true;  // drawOutside가 역 이미지만 그리게 됨
-      stage = 1;                  // 카메라 모드도 stage1으로 복귀
-      selectedNpcIndex = highlightedNpcIndex; // ⭐ 하이라이트된 NPC를 선택
-      stage2StartTime = null;     // 한 번만 실행되도록 리셋
-    }
-  if (round1_instance) {
+  if (currentRound === 1 && round1_instance) {
     round1_instance.draw();
+  } else if (currentRound === 2 && round2_instance) {
+    round2_instance.draw();
   }
 }
 
 function gameScreenKeyPressed() {
-  if (round1_instance) {
+  if (currentRound === 1 && round1_instance) {
     round1_instance.keyPressed();
+  } else if (currentRound === 2 && round2_instance) {
+    round2_instance.keyPressed();
   }
+  return false;
 }
 
 function gameScreenMousePressed() {
-  if (round1_instance) {
+  if (currentRound === 1 && round1_instance) {
     round1_instance.mousePressed();
+  } else if (currentRound === 2 && round2_instance) {
+    round2_instance.mousePressed();
   }
 }
 }
