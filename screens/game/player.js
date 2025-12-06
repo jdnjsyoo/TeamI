@@ -1,64 +1,64 @@
-function handlePlayerMovement() {
+function handlePlayerMovement(round) {
   // ⭐ 좌석 앞으로 자동 이동 중일 때: (지금은 플래그가 안 켜져서 실행 안 됨)
-  if (isPlayerAutoMovingToSeat && playerTargetX !== null) {
+  if (round.isPlayerAutoMovingToSeat && round.playerTargetX !== null) {
     const autoSpeed = 4;
-    if (Math.abs(x - playerTargetX) <= autoSpeed) {
-      x = playerTargetX;
-      isPlayerAutoMovingToSeat = false;
-      playerDir = "sit";  // 도착 후 착석
+    if (Math.abs(round.x - round.playerTargetX) <= autoSpeed) {
+      round.x = round.playerTargetX;
+      round.isPlayerAutoMovingToSeat = false;
+      round.playerDir = "sit";  // 도착 후 착석
     } else {
-      let dir = (playerTargetX > x) ? 1 : -1;
-      x += dir * autoSpeed;
-      playerDir = dir === 1 ? "right" : "left";
+      let dir = (round.playerTargetX > round.x) ? 1 : -1;
+      round.x += dir * autoSpeed;
+      round.playerDir = dir === 1 ? "right" : "left";
     }
     return;
   }
 
-  if (stage !== 1) { // Stage 1이 아닐 때만 좌우 이동 허용
+  if (round.stage !== 1) { // Stage 1이 아닐 때만 좌우 이동 허용
     if (keyIsDown(LEFT_ARROW)) {
-      x -= speed;
-      playerDir = "left";
+      round.x -= speed;
+      round.playerDir = "left";
     }
     // → 오른쪽
     else if (keyIsDown(RIGHT_ARROW)) {
-      x += speed;
-      playerDir = "right";
+      round.x += speed;
+      round.playerDir = "right";
     }
   }
   // ↑ 정면
   if (keyIsDown(UP_ARROW)) {
-    playerDir = "front";
+    round.playerDir = "front";
   }
   // ↓ 뒷모습
   else if (keyIsDown(DOWN_ARROW)) {
-    playerDir = "back";
+    round.playerDir = "back";
   }
 }
 
-function drawPlayer(npcBottomWorldY) {
+function drawPlayer(round, npcBottomWorldY) {
     // ⭐ 플레이어 그리기
   let playerBottomY = npcBottomWorldY;
 
   push();
-  if (playerDir === "left") {
+  if (round.playerDir === "left") {
     // 왼쪽: 옆모습 뒤집기
     let playerTopY = playerBottomY - playerScale;
-    translate(x + playerScale, playerTopY + playerYShift);
+    translate(round.x + playerScale, playerTopY + playerYShift);
     scale(-1, 1);
     image(img, 0, 0, playerScale, playerScale);
-  } else if (playerDir === "right") {
+  } else if (round.playerDir === "right") {
     // 오른쪽: 옆모습 그대로
     let playerTopY = playerBottomY - playerScale;
-    image(img, x, playerTopY + playerYShift, playerScale, playerScale);
-  } else if (playerDir === "front") {
+    image(img, round.x, playerTopY + playerYShift, playerScale, playerScale);
+  } else if (round.playerDir === "front") {
     // 정면
     let playerTopY = playerBottomY - playerScale;
-    image(imgBack, x, playerTopY + playerYShift, playerScale, playerScale);
-  } else if (playerDir === "back") {
+    image(imgBack, round.x, playerTopY + playerYShift, playerScale, playerScale);
+  } else if (round.playerDir === "back") {
     // 뒷모습
     let playerTopY = playerBottomY - playerScale;
-    image(imgFront, x, playerTopY + playerYShift, playerScale, playerScale);
-  } else if (playerDir === "sit") {
+    image(imgFront, round.x, playerTopY + playerYShift, playerScale, playerScale);
+  } else if (round.playerDir === "sit") {
     // ⭐ 착석 상태: 다른 앉아 있는 NPC와 동일한 사이즈 & y축 정렬
     let sitHeight = npcTargetHeight;           // 앉은 NPC와 같은 높이
     let sitScale  = sitHeight / imgSit.height;
@@ -70,10 +70,10 @@ function drawPlayer(npcBottomWorldY) {
 
     // ⭐ 정답을 맞춘 경우: 시청 캐릭터가 앉아 있던 좌석 중심에 정확히 앉기
     let sitX;
-    if (npc2SeatChosen && npc2OriginalSeatX !== null) {
-      sitX = npc2OriginalSeatX - sitW / 2;   // 좌석 중심 - 반 너비
+    if (round.npc2SeatChosen && round.npc2OriginalSeatX !== null) {
+      sitX = round.npc2OriginalSeatX - sitW / 2;   // 좌석 중심 - 반 너비
     } else {
-      sitX = x;
+      sitX = round.x;
     }
 
     image(imgSit, sitX, sitTopY, sitW, sitH);

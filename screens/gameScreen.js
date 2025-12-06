@@ -1,32 +1,12 @@
+// 전역 변수 - Round1 클래스 인스턴스를 담을 변수
+let round1_instance;
+
+// gameScreenPreload 함수는 screens/game/assets.js 파일에 있습니다.
+
 function gameScreenSetup() {
-  // 고정 캔버스 사이즈 (요청대로)
   createCanvas(1024, 869);
-
-  // 좌석 위치 설정
-  for (let i = 0; i < 7; i++) {
-    npcPositions[i] = {
-      x: startX + i * seatSpacing,
-      y: seatBaseY
-    };
-  }
-
-  // ⭐ 2번 좌석 원래 위치 저장 (왼쪽에서 두 번째, 좌석 중심 X)
-  npc2OriginalSeatX = npcPositions[1].x;
-}
-
-// Stage 2로 전환하는 헬퍼 함수
-function enterStage2() {
-  stage = 2;
-  stage2StartTime = millis();
-  isStationImgActive = false;
-  selectedNpcIndex = -1;
-  showPressEnter = false;
-
-  // Initialize timer
-  timerStartTime = millis();
-  if (timeBar) {
-    timerWidth = timeBar.width;
-  }
+  round1_instance = new Round1();
+  round1_instance.setup();
 }
 
 function gameScreenDraw() {
@@ -158,16 +138,19 @@ function gameScreenDraw() {
       selectedNpcIndex = highlightedNpcIndex; // ⭐ 하이라이트된 NPC를 선택
       stage2StartTime = null;     // 한 번만 실행되도록 리셋
     }
+  if (round1_instance) {
+    round1_instance.draw();
   }
 }
 
-// 랜덤으로 역을 선택하고 관련 에셋을 로드하는 함수
-function initializeStationAssets() {
-  const randomIndex = floor(random(stations.length));
-  currentStationName = stations[randomIndex];
+function gameScreenKeyPressed() {
+  if (round1_instance) {
+    round1_instance.keyPressed();
+  }
+}
 
-  // 도시 배경 로드 (예: '강남.png')
-  cityImg = loadImage(`assets/scenery/${currentStationName}.png`);
-  // 역 이미지 로드 (예: '역_강남.PNG')
-  stationImg = loadImage(`assets/scenery/역_${currentStationName}.PNG`);
+function gameScreenMousePressed() {
+  if (round1_instance) {
+    round1_instance.mousePressed();
+  }
 }

@@ -1,8 +1,24 @@
+let round1Scripts;
+
+function initializeStationAssets() {
+  // 역 관련 에셋
+  const stations = ["강남", "강변", "서울대입구", "성수", "시청", "을지로", "잠실", "홍대"];
+  currentStationName = random(stations); // 역 이름 랜덤 선택
+  
+  // currentStationName에 따라 다른 이미지 로드
+  stationImg = loadImage(`assets/scenery/역_${currentStationName}.PNG`);
+  cityImg = loadImage(`assets/scenery/${currentStationName}.png`);
+  cloudImg = loadImage('assets/scenery/구름.png'); // 구름 이미지는 공통
+}
+
 function gameScreenPreload() {
   initializeStationAssets(); // 랜덤 역 선택 및 관련 에셋 로드
 
   // 공통 폰트 로드
   dungGeunMoFont = loadFont('assets/fonts/DungGeunMo.ttf');
+  
+  // 라운드 1 스크립트 로드
+  round1Scripts = loadJSON('assets/scripts/round1.json');
 
   //press enter to start
   pressEnterImg = loadImage("assets/start/pressenter.png");
@@ -57,6 +73,7 @@ function gameScreenPreload() {
   stopButton = loadImage('assets/buttons/stop_투명.png');
   quitButton = loadImage('assets/buttons/quit_투명.png');
   settingButton = loadImage('assets/buttons/setting_투명.png');
+  gameScore = loadImage('assets/result/score.png');
   sitHereImg = loadImage('assets/buttons/sit_here.png');
   sitHereHoverImg = loadImage('assets/buttons/sit_here_hover.png');
   sitArrowImg = loadImage("assets/buttons/sit_arrow.png")
