@@ -13,10 +13,6 @@ function applyScreen(prefix) {
 // =========================
 
 function switchToGameScreen() {
-  if (typeof gameScreenPreload === "function") {
-    gameScreenPreload();
-  }
-
   applyScreen("gameScreen");
   // 화면 전환 시, 새 화면의 setup을 직접 한 번 실행
   if (typeof setup === "function") {
