@@ -1,6 +1,9 @@
 function gameScreenPreload() {
   initializeStationAssets(); // 랜덤 역 선택 및 관련 에셋 로드
 
+  // 공통 폰트 로드
+  dungGeunMoFont = loadFont('assets/fonts/DungGeunMo.ttf');
+
   //press enter to start
   pressEnterImg = loadImage("assets/start/pressenter.png");
 

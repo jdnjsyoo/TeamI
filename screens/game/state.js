@@ -101,3 +101,5 @@ let timeBar;
 let timerWidth;
 const stage2Duration = 10000; // 10 seconds
 let timerStartTime;
+
+let dungGeunMoFont; // 모든 라운드에서 사용할 폰트
