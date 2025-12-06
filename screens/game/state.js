@@ -44,13 +44,15 @@ let currentStationName; // 랜덤으로 선택된 역 이름
 const stations = ['강남', '강변', '성수', '시청', '을지로', '잠실', '홍대']; // 지하철역 목록
 
 // 버튼 이미지
-let stopButton, quitButton, settingButton;
+
+let sitArrowImg; 
+let stopButton, quitButton, settingButton, gameScore;
 // 버튼 히트박스(스크린 좌표 기준)
 let stopBtnX, stopBtnY, stopBtnW, stopBtnH;
 let quitBtnX, quitBtnY, quitBtnW, quitBtnH;
 let settingBtnX, settingBtnY, settingBtnW, settingBtnH;
 
-// ⭐ 추가: 발을 더 아래로 내리기 위한 Y 오프셋
+// 추가: 발을 더 아래로 내리기 위한 Y 오프셋
 const playerYShift = 25;        // 유저 캐릭터를 화면에서 더 아래로
 const standingNpcYShift = 25;   // 서 있는 2번 NPC도 같은 만큼 아래로
 
@@ -68,24 +70,24 @@ let isSitButtonHovered = false;
 let isSitButtonPressed = false;
 let sitButtonPressTime = 0;
 
-// ⭐ sit here 클릭 후 3초 뒤에 2번 NPC가 서도록 트리거 시간
+// sit here 클릭 후 3초 뒤에 2번 NPC가 서도록 트리거 시간
 let npc2StandTriggerTime = null;
 
-// ⭐ 2번 NPC 걷기 관련 변수
+// 2번 NPC 걷기 관련 변수
 let npc2WalkSpeed = 2;
 let npc2WalkStartTime = null;     // 서고 난 뒤 걷기 시작 시점
 let npc2HasLeftScreen = false;    // 화면 밖으로 완전히 나갔는지
 
-// ⭐ 2번 좌석 관련
+// 2번 좌석 관련
 let npc2OriginalSeatX = null;     // 원래 2번 좌석의 X (좌석 중심)
 let npc2SeatChosen = false;       // 유저가 2번 NPC를 sit here로 선택했는지
 let hoveredSitNpcIndex = -1;      // 현재 hover 중인 sit here 버튼의 NPC 인덱스
 
-// ⭐ 유저 자동 이동 관련 (지금은 안 써도 됨, false라서 동작 안 함)
+// 유저 자동 이동 관련 (지금은 안 써도 됨, false라서 동작 안 함)
 let isPlayerAutoMovingToSeat = false;
 let playerTargetX = null;
 
-// ⭐ 결과 에셋 및 상태
+// 결과 에셋 및 상태
 let successImg;
 let failImg;
 let resultOverlayType = null;      // 'success' 또는 'fail'
@@ -101,3 +103,9 @@ let timeBar;
 let timerWidth;
 const stage2Duration = 10000; // 10 seconds
 let timerStartTime;
+
+let dungGeunMoFont; // 모든 라운드에서 사용할 폰트
+
+
+// 2라운드
+let isTargetArrowHovered = false;

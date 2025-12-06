@@ -13,10 +13,12 @@ let imgStart;   // 시작 화면
 let imgHowto;   // 플레이 방법
 let imgHint;    // 힌트 화면
 
+let st_highlightColor;
+
 // 메뉴 화면의 동그라미 버튼 정보 (대략 위치값)
 let btnStart  = { x: 190, y: 630, r: 140 };  // "게임 시작"
-let btnHowto  = { x: 507, y: 630, r: 140 };  // "플레이 방법"
-let btnHint   = { x: 810, y: 630, r: 140 };  // "힌트"
+let btnHowto  = { x: 505, y: 630, r: 140 };  // "플레이 방법"
+let btnHint   = { x: 815, y: 630, r: 140 };  // "힌트"
 
 // 플레이 방법 / 힌트 화면의 X버튼 영역 (사각형)
 let closeBtn = { x: 900, y: 110, w: 45, h: 46 };
@@ -39,7 +41,9 @@ function startScreenPreload() {
 function startScreenSetup() {
   createCanvas(1024, 869)
   // 시작 화면 들어올 때 기본 상태는 메인 메뉴
+  st_highlightColor = color(255, 255, 20, 120);
   startState = "menu";
+
 }
 
 // =====================
@@ -58,9 +62,26 @@ function startScreenDraw() {
 
 // ------------- 각 화면 -------------
 
+
 // 시작 메뉴 화면
 function drawStartMenu() {
   image(imgStart, 0, 0, width, height);
+
+   noFill();
+   stroke(st_highlightColor);
+   strokeWeight(16);
+
+  if (insideCircle(mouseX, mouseY, btnStart)) {
+    ellipse(btnStart.x, btnStart.y, btnStart.r * 2 + 20);
+  }
+  if (insideCircle(mouseX, mouseY, btnHowto)) {
+    ellipse(btnHowto.x, btnHowto.y, btnHowto.r * 2 + 20);
+  }
+  if (insideCircle(mouseX, mouseY, btnHint)) {
+    ellipse(btnHint.x, btnHint.y, btnHint.r * 2 + 20);
+  }
+ 
+  strokeWeight(1);
 }
 
 // 플레이 방법 화면 (이미지 그대로)

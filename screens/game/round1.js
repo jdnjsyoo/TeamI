@@ -40,14 +40,21 @@ class Round1 {
     // Result state
     this.resultOverlayType = null;
     this.resultOverlayStartTime = null;
+    this.resultScriptPlayer = null;
 
-    // UI state
-    this.showPressEnter = true;
+    // --- New Intro Flow State ---
+    this.showPressEnter = false; // 시작할 때 숨김
+    this.gameStarted = false; 
+    this.awaitingStart = false; // 스크립트 끝나고 스페이스바 기다릴 때 true
+    this.introState = 'playing'; // 시작하자마자 재생
 
-    // Game starting state
-    this.gameStarted = false; // 게임 시작 여부
-    this.awaitingStart = true; // 게임 시작을 기다리는 상태를 위한 변수
-    this.showStartMessage = true; // "Press SPACE to start" 메시지 표시 여부
+    // 스크립트 플레이어 생성 및 인트로 시작
+    this.introScriptPlayer = new ScriptPlayer(round1Scripts.round1_intro, () => {
+      // 스크립트 완료 콜백
+      this.introState = 'finished';
+      this.showPressEnter = true;   // "PRESS SPACE" 메시지 표시
+      this.awaitingStart = true;    // 최종 스페이스바 입력 대기
+    });
   }
 
   setDebugColor(c) {
@@ -82,102 +89,87 @@ class Round1 {
   draw() {
     background(0);
 
-    const worldGroundY = backgr ? backgr.height - 80 : height - 50;
+    // 게임 로직은 gameStarted 플래그로 제어
+    if (this.gameStarted) {
+      const worldGroundY = backgr ? backgr.height - 80 : height - 50;
 
-    updateNpcAnimations(this);
-    handleNpcBehavior(this, worldGroundY, -this.x + width / 4 + 20, this.stage === 1 ? 1.2 : width / (4 * seatSpacing));
+      updateNpcAnimations(this);
+      handleNpcBehavior(this, worldGroundY, -this.x + width / 4 + 20, this.stage === 1 ? 1.2 : width / (4 * seatSpacing));
 
-    this.y = backgr ? backgr.height - 80 : groundY;
+      this.y = backgr ? backgr.height - 80 : groundY;
 
-    // Use the Environment class to draw the background
-    this.environment.display(this.isStationImgActive, this.stage);
+      // Use the Environment class to draw the background
+      this.environment.display(this.isStationImgActive, this.stage);
 
-    // Handle player sitting logic
-    if (this.isSitButtonPressed) {
-      if (this.hoveredSitNpcIndex !== -1) {
-        // Player sits at the hovered NPC's position
-        this.x = this.npcPositions[this.hoveredSitNpcIndex].x;
-        this.playerDir = "sit";
-        this.isSitButtonPressed = false; // Reset the flag after processing
+      handlePlayerMovement(this);
 
-        // Check for SUCCESS/FAIL immediately after player sits
-        if (this.npc2SeatChosen) {
-            this.resultOverlayType = "success";   // SUCCESS 오버레이
-            this.resultOverlayStartTime = millis();
-            // Trigger NPC 2 to stand and walk away after successful sitting
-            this.isNpc2Standing = true;
-            this.npc2WalkStartTime = millis();
-        } else {
-            this.resultOverlayType = "fail";    // FAIL 오버레이
-            this.resultOverlayStartTime = millis();
+      if (this.stage === 2) {
+        const firstNpcX = startX;
+        const sectionWidth = seatSpacing;
+        const rangeStart = firstNpcX - sectionWidth / 2 - 115;
+        const numNpcs = 7;
+        const rangeEnd = rangeStart + sectionWidth * numNpcs;
+
+        this.highlightedNpcIndex = -1;
+        if (this.x >= rangeStart && this.x < rangeEnd) {
+          const relativeX = this.x - rangeStart;
+          const index = Math.floor(relativeX / sectionWidth);
+          this.highlightedNpcIndex = constrain(index, 0, numNpcs - 1);
         }
+      } else {
+        this.highlightedNpcIndex = -1;
       }
-    }
 
-    handlePlayerMovement(this);
+      let playerRightBoundary = backgr.width - 350;
+      this.x = constrain(this.x, 0, playerRightBoundary);
 
-    if (this.stage === 2) {
-      const firstNpcX = startX;
-      const sectionWidth = seatSpacing;
-      const rangeStart = firstNpcX - sectionWidth / 2 - 115;
-      const numNpcs = 7;
-      const rangeEnd = rangeStart + sectionWidth * numNpcs;
+      const visibleSeats = 4;
+      let stageScale = this.stage === 1 ? 1.2 : width / (visibleSeats * seatSpacing);
+      if (this.stage === 2) stageScale *= 0.92;
+      stageScale = constrain(stageScale, 1.2, 4.0);
 
-      this.highlightedNpcIndex = -1;
-      if (this.x >= rangeStart && this.x < rangeEnd) {
-        const relativeX = this.x - rangeStart;
-        const index = Math.floor(relativeX / sectionWidth);
-        this.highlightedNpcIndex = constrain(index, 0, numNpcs - 1);
+      let offsetX = width / 4 + 20;
+      let offsetY = height / 4 + 20;
+
+      let scrollX = (this.stage === 2) ? -this.x + offsetX : -0 + offsetX;
+      let scrollY = -this.y + offsetY;
+
+      scrollX = constrain(scrollX, -backgr.width + width / stageScale, 0);
+      scrollY = constrain(scrollY, -backgr.height + height / stageScale, 0);
+
+      let topScreenY = (scrollY - 50) * stageScale;
+      let worldShiftY = 0;
+      if (topScreenY > 0) {
+        worldShiftY = -topScreenY / stageScale;
       }
+
+      const stage2YOffsetForMouse = this.stage === 2 ? 100 : 0;
+      let worldMouseX = mouseX / stageScale - (scrollX - 50);
+      let worldMouseY = mouseY / stageScale - (scrollY - 50 + worldShiftY + stage2YOffsetForMouse);
+
+      push();
+      scale(stageScale);
+      const stage2YOffset = this.stage === 2 ? 100 : 0;
+      translate(scrollX - 50, scrollY - 50 + worldShiftY + stage2YOffset);
+      
+      image(backgr, 0, 0, backgr.width, backgr.height);
+
+      const npcBottomY = drawNpcs(this, worldMouseX, worldMouseY);
+      drawPlayer(this, npcBottomY);
+
+      pop();
     } else {
-      this.highlightedNpcIndex = -1;
+      // 인트로 중에는 그냥 까만 화면
+      background(0);
+      // 지하철 배경은 보여주기
+      this.environment.display(false, 1); // 역 아니고, stage 1
+      image(backgr, 0, 0, backgr.width, backgr.height);
     }
-
-    let playerRightBoundary = backgr.width - 350;
-    this.x = constrain(this.x, 0, playerRightBoundary);
-
-    const visibleSeats = 4;
-    let stageScale = this.stage === 1 ? 1.2 : width / (visibleSeats * seatSpacing);
-    if (this.stage === 2) stageScale *= 0.92;
-    stageScale = constrain(stageScale, 1.2, 4.0);
-
-    let offsetX = width / 4 + 20;
-    let offsetY = height / 4 + 20;
-
-    let scrollX = (this.stage === 2) ? -this.x + offsetX : -0 + offsetX;
-    let scrollY = -this.y + offsetY;
-
-    scrollX = constrain(scrollX, -backgr.width + width / stageScale, 0);
-    scrollY = constrain(scrollY, -backgr.height + height / stageScale, 0);
-
-    let topScreenY = (scrollY - 50) * stageScale;
-    let worldShiftY = 0;
-    if (topScreenY > 0) {
-      worldShiftY = -topScreenY / stageScale;
-    }
-
-    const stage2YOffsetForMouse = this.stage === 2 ? 100 : 0;
-    let worldMouseX = mouseX / stageScale - (scrollX - 50);
-    let worldMouseY = mouseY / stageScale - (scrollY - 50 + worldShiftY + stage2YOffsetForMouse);
-
-    push();
-    scale(stageScale);
-    const stage2YOffset = this.stage === 2 ? 100 : 0;
-    translate(scrollX - 50, scrollY - 50 + worldShiftY + stage2YOffset);
-
-    // The environment background is already drawn by this.environment.display()
-    // No need to draw outside again for stage 2 here.
-
-    image(backgr, 0, 0, backgr.width, backgr.height);
-
-    const npcBottomY = drawNpcs(this, worldMouseX, worldMouseY);
-    drawPlayer(this, npcBottomY);
-
-    pop();
-
+    
+    // UI는 항상 그림 (인트로 포함)
     drawUi(this);
 
-    if (this.stage === 2 && this.stage2StartTime !== null && !this.isStationImgActive) {
+    if (this.gameStarted && this.stage === 2 && this.stage2StartTime !== null && !this.isStationImgActive) {
       if (millis() - this.stage2StartTime >= stage2Duration) {
         this.isStationImgActive = true;
         this.stage = 1;
@@ -189,24 +181,112 @@ class Round1 {
 
   // 키 눌림 이벤트 핸들러
   keyPressed() {
-    // 스페이스바를 눌러 게임 시작
-    if (this.awaitingStart && keyCode === 32) { // 스페이스바
-      this.gameStarted = true;
-      this.awaitingStart = false;
-      this.showStartMessage = false;
-      this.start = millis(); // 게임 시작 시간 기록
-      console.log("Game started!");
-      return false; // 기본 스페이스바 동작 방지
+    if (this.resultScriptPlayer) {
+      if (keyCode === 32) { // 스페이스바
+        if (!this.resultScriptPlayer.isFinished()) {
+          this.resultScriptPlayer.next();
+        }
+      } else if ((key === 'n' || key === 'N') && this.resultScriptPlayer.isFinished()) {
+        // TODO: Round 2로 넘어가는 로직
+        if (typeof switchToRound2 === "function") {
+        switchToRound2();}
+        console.log("Switching to Round 2!");
+      }
+      return false;
     }
-    
-    // Call the shared input handler for stage toggling, etc.
-    handleGameInputKeyPressed(this);
 
+    if (keyCode === 32) { // 스페이스바
+      if (this.introState === 'playing') {
+        // 1. 인트로 스크립트 진행
+        this.introScriptPlayer.next();
+      } else if (this.introState === 'finished' && this.awaitingStart) {
+        // 2. 스크립트 끝나고, 스페이스바 대기 중일 때 -> 게임 시작 및 즉시 2단계 진입
+        this.gameStarted = true;
+        this.awaitingStart = false;
+        this.showPressEnter = false;
+        this.start = millis(); // 게임 실제 시작 시간
+        this.enterStage2(); // <--- 플레이어 이동 및 게임플레이를 위해 즉시 2단계로 전환
+      } else if (this.gameStarted) {
+        // 3. 게임 시작 후 스페이스바 -> 스테이지 토글
+        if (this.stage === 1) {
+          this.enterStage2();
+        } else if (this.stage === 2) {
+          this.isStationImgActive = true;
+          this.stage = 1;
+          this.selectedNpcIndex = this.highlightedNpcIndex;
+          this.stage2StartTime = null;
+        }
+      }
+    } else if (key === 'n' || key === 'N') {
+      // 'n' 키: 2번 NPC 일어나기 (수동 디버그용)
+      if (this.gameStarted) {
+        this.isNpc2Standing = true;
+      }
+    }
     return false; // 기본 키 동작 방지
   }
 
   // 마우스 클릭 이벤트 핸들러
   mousePressed() {
-    handleGameInputMousePressed(this); // Call the shared mouse input handler
+    if (!this.gameStarted) return; // 게임 시작 전에는 마우스 클릭 무시
+
+    // --- stop 버튼 ---
+    if (
+      stopBtnX !== undefined &&
+      mouseX >= stopBtnX && mouseX <= stopBtnX + stopBtnW &&
+      mouseY >= stopBtnY && mouseY <= stopBtnY + stopBtnH
+    ) {
+      if (typeof switchToStopScreen === "function") {
+        switchToStopScreen();
+      }
+      return;
+    }
+
+    // --- quit 버튼 ---
+    if (
+      quitBtnX !== undefined &&
+      mouseX >= quitBtnX && mouseX <= quitBtnX + quitBtnW &&
+      mouseY >= quitBtnY && mouseY <= quitBtnY + quitBtnH
+    ) {
+      if (typeof switchToQuitScreen === "function") {
+        switchToQuitScreen();
+      }
+      return;
+    }
+
+    // --- setting 버튼 ---
+    if (
+      settingBtnX !== undefined &&
+      mouseX >= settingBtnX && mouseX <= settingBtnX + settingBtnW &&
+      mouseY >= settingBtnY && mouseY <= settingBtnY + settingBtnH
+    ) {
+      if (typeof switchToSettingsScreen === "function") {
+        switchToSettingsScreen();
+      }
+      return;
+    }
+
+    // --- sit here 버튼 ---
+    if (this.isSitButtonHovered) {
+      this.isSitButtonPressed = true;
+      this.sitButtonPressTime = millis();
+      this.isStationImgActive = true;
+      this.npc2StandTriggerTime = millis();
+
+      if (this.hoveredSitNpcIndex === 1) {
+        this.npc2SeatChosen = true;
+      } else {
+        this.npc2SeatChosen = false;
+      }
+      return;
+    }
+    
+    // --- 버튼이 아닌 곳 클릭 (속도 부스트) ---
+    speed += boostAmount;
+    if (speed > maxBoost) speed = maxBoost;
+    setTimeout(() => {
+      speed -= boostAmount;
+      if (speed < baseSpeed) speed = baseSpeed;
+    }, 1000);
   }
 }
