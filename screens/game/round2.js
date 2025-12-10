@@ -1,3 +1,54 @@
+// Round2용 : 빈자리 1개 + 앉아 있는 NPC 6명
+function loadRound2NpcAssets() {
+  // 1) npcData를 평탄화해서 모든 NPC 후보 풀 만들기
+  let allNpcPool = [];
+  for (const station in npcData) {
+    const npcs = npcData[station];
+    npcs.forEach(info => {
+      allNpcPool.push({
+        station: station,
+        spec: info.spec,
+        frameCount: info.frames
+      });
+    });
+  }
+
+  // 2) 섞어서 앞에서 6명만 사용
+  shuffle(allNpcPool);
+  const chosen = allNpcPool.slice(0, 6);  // 👈 6명
+
+  // 3) 전역 애니메이션 배열 초기화
+  npcAnimationFrames = [];
+  npcStandImgs = [];  // Round2에서는 안 쓰지만 초기화
+
+  // 4) 선택된 6명의 sitting 이미지 로드
+  chosen.forEach((npc, index) => {
+    let frames = [];
+    for (let i = 1; i <= npc.frameCount; i++) {
+      frames.push(
+        loadImage(`assets/npcChracter/sitting/${npc.station}_${npc.spec}_${i}.png`)
+      );
+    }
+    npcAnimationFrames[index] = frames;
+    npcStandImgs[index] = null;   // Round2에서는 안 씀
+  });
+
+  // 7번째 자리(인덱스 6)는 비어있게 두기
+  npcAnimationFrames[6] = null;
+  npcStandImgs[6] = null;
+}
+
+function switchToRound2() {
+  // 1) Round2용 NPC 에셋 로드
+  loadRound2NpcAssets();
+
+  // 2) 라운드2 씬 생성
+  currentScene = new Round2();
+  currentScene.setup();
+}
+
+
+
 // =======================
 // Round 2 : 7번 빈자리 달리기
 // =======================
