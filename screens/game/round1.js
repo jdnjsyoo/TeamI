@@ -1,3 +1,93 @@
+// 모든 역의 NPC 정보를 담는 객체
+const npcData = {
+    "강남": [{ spec: "직장인", frames: 2 }, { spec: "화장", frames: 2 }],
+    "강변": [{ spec: "군인", frames: 2 }, { spec: "백팩", frames: 2 }, { spec: "캐리어", frames: 3 }],
+    "서울대입구": [{ spec: "잠", frames: 2 }, { spec: "책", frames: 2 }],
+    "성수": [{ spec: "쇼핑백", frames: 2 }, { spec: "폰", frames: 2 }],
+    "시청": [{ spec: "서류", frames: 3 }, { spec: "집회", frames: 2 }],
+    "을지로": [{ spec: "외국인", frames: 2 }, { spec: "힙합", frames: 3 }],
+    "잠실": [{ spec: "코트", frames: 2 }, { spec: "학생", frames: 2 }],
+    "홍대": [{ spec: "애니", frames: 3 }, { spec: "탈색", frames: 3 }]
+};
+
+// Fisher-Yates shuffle to randomize array in place
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+let correctNpcIndex = -1; // 정답 NPC의 인덱스를 저장할 전역 변수
+let selectedNpcs = []; // 선택된 NPC 정보를 저장할 전역 변수
+
+function loadRound1Assets() {
+    // ... (기존의 역 관련 에셋 초기화 및 NPC 선택 로직)
+    // 1. 역 관련 에셋 초기화
+    const allStations = Object.keys(npcData);
+    currentStationName = random(allStations); // 역 이름 랜덤 선택
+    
+    stationImg = loadImage(`assets/scenery/역_${currentStationName}.PNG`);
+    cityImg = loadImage(`assets/scenery/${currentStationName}.png`);
+
+    // 2. NPC 랜덤 선택 로직
+    selectedNpcs = []; // 배열 초기화
+
+    // 정답 NPC 선택
+    const correctNpcPool = npcData[currentStationName];
+    const correctNpcInfo = random(correctNpcPool);
+    const correctNpc = {
+        station: currentStationName,
+        spec: correctNpcInfo.spec,
+        isCorrect: true,
+        frameCount: correctNpcInfo.frames
+    };
+    selectedNpcs.push(correctNpc);
+
+    // 오답 NPC 선택
+    const otherStations = allStations.filter(station => station !== currentStationName);
+    shuffle(otherStations);
+    
+    for (let i = 0; i < 6; i++) {
+        const station = otherStations[i];
+        const wrongNpcPool = npcData[station];
+        const wrongNpcInfo = random(wrongNpcPool);
+        selectedNpcs.push({
+            station: station,
+            spec: wrongNpcInfo.spec,
+            isCorrect: false,
+            frameCount: wrongNpcInfo.frames
+        });
+    }
+
+    // 최종 NPC 리스트 랜덤화 (자리를 섞기 위함)
+    shuffle(selectedNpcs);
+
+    // 정답 NPC의 최종 인덱스 찾기
+    correctNpcIndex = selectedNpcs.findIndex(npc => npc.isCorrect);
+
+    // 3. 선택된 NPC 에셋 로드
+    npcAnimationFrames = [];
+    npcStandImgs = []; // npcStandImgs 초기화
+
+    selectedNpcs.forEach((npc, index) => {
+        let frames = [];
+        // sitting 이미지 로드
+        for (let i = 1; i <= npc.frameCount; i++) {
+            frames.push(loadImage(`assets/npcChracter/sitting/${npc.station}_${npc.spec}_${i}.png`));
+        }
+
+        // 정답 NPC인 경우 hint 이미지 추가
+        if (npc.isCorrect) {
+            frames.push(loadImage(`assets/npcChracter/hint/${npc.station}_${npc.spec}_힌트.png`));
+            // 정답 NPC의 standing 이미지 로드
+            npcStandImgs[index] = loadImage(`assets/npcChracter/standing/${npc.station}_${npc.spec}_스탠딩.png`);
+        }
+        npcAnimationFrames[index] = frames;
+    });
+}
+
+
 class Round1 {
   constructor() {
     // Player state
@@ -11,16 +101,19 @@ class Round1 {
     this.npcCurrentFrameIndex = [0, 0, 0, 0, 0, 0, 0];
     this.lastAnimationTime = 0;
     this.npcPositions = [];
-    this.isNpc2Standing = false;
-    this.npc2StandTriggerTime = null;
-    this.npc2WalkStartTime = null;
-    this.npc2HasLeftScreen = false;
-    this.npc2OriginalSeatX = null;
-    this.npc2SeatChosen = false;
+    
+    // --- Refactored NPC state ---
+    this.npcStandingIndex = -1; // 일어설 NPC의 인덱스
+    this.npcStandTriggerTime = null;
+    this.npcWalkStartTime = null;
+    this.npcHasLeftScreen = false;
+    this.playerShouldSit = false; // 플레이어가 앉아야 하는지 여부
+    this.targetSeatX = null; // 플레이어가 앉을 좌석의 X 좌표
 
     // Game flow state
     this.stage = 1;
     this.currentStationName = '';
+    this.correctNpcIndex = correctNpcIndex; // 전역 변수에서 정답 인덱스 가져오기
     this.environment = new Environment(cityImg, cloudImg, stationImg);
     
     // Interaction state
@@ -62,6 +155,8 @@ class Round1 {
   }
 
   setup() {
+    loadRound1Assets(); // 라운드 1 에셋 로드
+    this.correctNpcIndex = correctNpcIndex; // 최신 정답 인덱스로 업데이트
     createCanvas(1024, 869);
 
     for (let i = 0; i < 7; i++) {
@@ -70,9 +165,9 @@ class Round1 {
         y: seatBaseY,
       };
     }
-    this.npc2OriginalSeatX = this.npcPositions[1].x;
-    
   }
+  
+  // ... (enterStage2, draw, keyPressed는 일단 유지)
 
   enterStage2() {
     this.stage = 2;
@@ -220,29 +315,27 @@ class Round1 {
     } else if (key === 'n' || key === 'N') {
       // 'n' 키: 2번 NPC 일어나기 (수동 디버그용)
       if (this.gameStarted) {
-        this.isNpc2Standing = true;
+        // this.isNpc2Standing = true; // 이 로직은 이제 사용하지 않음
       }
     }
     return false; // 기본 키 동작 방지
   }
 
+
   // 마우스 클릭 이벤트 핸들러
   mousePressed() {
-    if (!this.gameStarted) return; // 게임 시작 전에는 마우스 클릭 무시
+    if (!this.gameStarted || this.resultOverlayType) return; // 게임 시작 전 또는 결과 화면이 표시된 후에는 클릭 무시
 
-    // --- stop 버튼 ---
+    // --- UI 버튼들 (stop, quit, setting) ---
     if (
       stopBtnX !== undefined &&
       mouseX >= stopBtnX && mouseX <= stopBtnX + stopBtnW &&
       mouseY >= stopBtnY && mouseY <= stopBtnY + stopBtnH
     ) {
-      if (typeof switchToStopScreen === "function") {
-        switchToStopScreen();
-      }
+      if (typeof switchToStopScreen === "function") switchToStopScreen();
       return;
     }
-
-    // --- quit 버튼 ---
+    // ... (quit, setting 버튼 로직은 동일) ...
     if (
       quitBtnX !== undefined &&
       mouseX >= quitBtnX && mouseX <= quitBtnX + quitBtnW &&
@@ -253,8 +346,6 @@ class Round1 {
       }
       return;
     }
-
-    // --- setting 버튼 ---
     if (
       settingBtnX !== undefined &&
       mouseX >= settingBtnX && mouseX <= settingBtnX + settingBtnW &&
@@ -266,17 +357,33 @@ class Round1 {
       return;
     }
 
+
     // --- sit here 버튼 ---
     if (this.isSitButtonHovered) {
-      this.isSitButtonPressed = true;
+      this.isSitButtonPressed = true; // 버튼 눌림 상태 활성화
       this.sitButtonPressTime = millis();
-      this.isStationImgActive = true;
-      this.npc2StandTriggerTime = millis();
+      
+      // 정답 확인 로직
+      if (this.hoveredSitNpcIndex === this.correctNpcIndex) {
+        // --- 정답 ---
+        this.resultOverlayType = 'success';
+        this.npcStandingIndex = this.correctNpcIndex;
+        this.npcStandTriggerTime = millis();
+        this.playerShouldSit = true;
+        this.targetSeatX = this.npcPositions[this.correctNpcIndex].x;
+        // 성공 스크립트 실행
+        this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {
+          console.log("Success script finished.");
+        });
 
-      if (this.hoveredSitNpcIndex === 1) {
-        this.npc2SeatChosen = true;
       } else {
-        this.npc2SeatChosen = false;
+        // --- 오답 ---
+        this.resultOverlayType = 'fail';
+        this.resultOverlayStartTime = millis();
+         // 실패 스크립트 실행
+        this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {
+          console.log("Fail script finished.");
+        });
       }
       return;
     }
