@@ -276,7 +276,18 @@ class Round1 {
 
   // 키 눌림 이벤트 핸들러
   keyPressed() {
+
+     // ✅ 바로 2라운드 넘어가는 L 치트키 (디버그용)
+  if (key === 'l' || key === 'L') {
+    if (typeof switchToRound2 === "function") {
+      switchToRound2();
+    }
+    console.log("DEBUG: Force switch to Round 2 by L key");
+    return false;   // 다른 키 처리 안 하도록 바로 종료
+  }
+
     if (this.resultScriptPlayer) {
+      
       if (keyCode === 32) { // 스페이스바
         if (!this.resultScriptPlayer.isFinished()) {
           this.resultScriptPlayer.next();

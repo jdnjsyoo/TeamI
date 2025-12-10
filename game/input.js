@@ -29,7 +29,7 @@ function gameScreenKeyPressed() {
     return;
   }
 
-  // 'n' 키: 2번 NPC 일어나기 (수동 디버그용)
+  // 'n' 키: 2라운드 진입
   if (key === 'n' || key === 'N') {
     startRound2()
   }

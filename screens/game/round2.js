@@ -4,7 +4,7 @@
 class Round2 {
   constructor() {
     // Player state
-    this.x = startX - 200;                        // 좌석 왼쪽에서 시작
+    this.x = startX - 400;                        // 좌석 왼쪽에서 시작
     this.y = backgr ? backgr.height - 80 : groundY;
     this.playerDir = "right";
     this.isPlayerAutoMovingToSeat = false;
@@ -324,7 +324,7 @@ class Round2 {
 }
 
 // Round2용 속도 상수 (전역에 한 번만 선언)
-const ROUND2_BASE_SPEED   = 0.3;
+const ROUND2_BASE_SPEED   = 0.2;
 const ROUND2_BOOST_AMOUNT = 0.8;
 const ROUND2_MAX_SPEED    = 5;
 
