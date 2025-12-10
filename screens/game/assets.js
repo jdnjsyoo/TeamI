@@ -17,8 +17,9 @@ function gameScreenPreload() {
   // 공통 폰트 로드
   dungGeunMoFont = loadFont('assets/fonts/DungGeunMo.ttf');
   
-  // 라운드 1 스크립트 로드
+  // 라운드 별 스크립트 로드
   round1Scripts = loadJSON('assets/scripts/round1.json');
+  round2Scripts = loadJSON("assets/scripts/round2.json"); 
 
   //press enter to start
   pressEnterImg = loadImage("assets/start/pressenter.png");
@@ -85,4 +86,7 @@ function gameScreenPreload() {
   // Timer images
   timeBarBase = loadImage('assets/time/time0.png');
   timeBar = loadImage('assets/time/time100.png');
+
+
+  
 }

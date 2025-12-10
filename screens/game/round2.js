@@ -45,15 +45,42 @@ class Round2 {
     this.timerStartTime = null;
     this.timerWidth = 0;
 
-    // Result / UI
-    this.resultOverlayType = null;
-    this.resultOverlayStartTime = null;
-    this.resultScriptPlayer = null;  // 라운드2는 스크립트 안 써도 되지만 호환용
-    this.showPressEnter = false;
-    this.gameStarted = true;        // Round2는 바로 시작 상태
-    this.awaitingStart = false;
-    this.introState = "finished";
+ // Result / UI
+this.resultOverlayType = null;
+this.resultOverlayStartTime = null;
 
+// ----- 스크립트 관련 상태 -----
+this.resultScriptPlayer = null;
+this.introScriptPlayer = null;
+
+// 기본값: 인트로 없이 바로 게임 시작하는 상태
+this.showPressEnter = false;
+this.gameStarted = true;
+this.awaitingStart = false;
+this.introState = "finished";
+
+// 🔥 round2Scripts / ScriptPlayer가 준비된 경우에만 인트로 사용
+if (round2Scripts &&
+    round2Scripts.round2_intro &&
+    typeof ScriptPlayer === "function") {
+
+  this.gameStarted = false;        // 인트로 끝나기 전까지 게임 시작 X
+  this.introState = "playing";
+
+  this.introScriptPlayer = new ScriptPlayer(
+    round2Scripts.round2_intro,
+    () => {
+      // 스크립트 완료 콜백
+      this.introState = "finished";
+      this.showPressEnter = true;
+      this.awaitingStart = true;
+    }
+  );
+}
+
+    ;
+
+   
     // Round2 고유 상태
     this.isRound2 = true;
     this.targetSeatIndex = 6;       // 7번 자리
@@ -79,6 +106,13 @@ class Round2 {
   // ==============
   draw() {
     background(0);
+
+     // 🔽 이제 여기서는 return 안 함
+  if (!this.gameStarted && this.introState === "finished") {
+    if (this.introScriptPlayer) {
+      this.introScriptPlayer.draw(); // 나중에 위에 오버레이로 다시 옮겨도 됨
+    }
+  }
 
     const worldGroundY = backgr ? backgr.height - 80 : height - 50;
 
@@ -155,12 +189,25 @@ class Round2 {
 
     // Round1과 같은 UI (상단 바, 오버레이 등)
     drawUi(this);
+
+     if (this.introScriptPlayer) {
+    if (this.introState === "playing") {
+      this.introScriptPlayer.draw();  // 인트로 진행 중
+    } else if (!this.gameStarted && this.introState === "finished") {
+      this.introScriptPlayer.draw();  // 마지막 문장 유지
+
+  
+      
+    }
+  }
   }
 
   // ==============
   // 이동 로직
   // ==============
   handleMovement() {
+    
+  
     // 좌우 이동: Round1과 같은 방식 (speed는 Round2 전용)
     if (keyIsDown(LEFT_ARROW)) {
       this.x -= this.speed;
@@ -238,8 +285,35 @@ class Round2 {
   // 키 입력
   // ==============
   keyPressed() {
-    // Round2에서 특별히 키로 할 건 딱히 없음 (필요하면 여기서 추가)
-    return false;
+    // 스페이스바
+  if (keyCode === 32) {
+    // 1) 인트로 스크립트 진행 중이면 다음 줄
+    if (this.introScriptPlayer && this.introState === "playing") {
+      this.introScriptPlayer.next();
+      return false;
+    }
+
+    // 2) 인트로 끝나고 스페이스 대기 중이면 → 게임 시작
+    if (!this.gameStarted &&
+        this.introState === "finished" &&
+        this.awaitingStart) {
+
+      this.gameStarted = true;
+      this.awaitingStart = false;
+      this.showPressEnter = false;
+      this.stage2StartTime = millis(); // 필요하면 타이머 시작
+
+      return false;
+    }
+
+    // 3) 결과 스크립트(success/fail) 재생 중이면 → 다음 줄
+    if (this.resultScriptPlayer && !this.resultScriptPlayer.isFinished()) {
+      this.resultScriptPlayer.next();
+      return false;
+    }
+  }
+
+  return false;
   }
 
   // ==============
@@ -299,6 +373,16 @@ class Round2 {
       this.resultOverlayType = "success";
       this.resultOverlayStartTime = millis();
 
+      // 🔥 성공 스크립트 시작
+  if (round2Scripts && round2Scripts.round2_success && typeof ScriptPlayer === "function") {
+    this.resultScriptPlayer = new ScriptPlayer(round2Scripts.round2_success);
+  }
+
+  console.log("ROUND 2 SUCCESS: clicked arrow!");
+  return;
+
+
+
       console.log("ROUND 2 SUCCESS: clicked arrow!");
       return;
     }
@@ -324,9 +408,9 @@ class Round2 {
 }
 
 // Round2용 속도 상수 (전역에 한 번만 선언)
-const ROUND2_BASE_SPEED   = 0.2;
-const ROUND2_BOOST_AMOUNT = 0.8;
-const ROUND2_MAX_SPEED    = 5;
+const ROUND2_BASE_SPEED   = 0.1;
+const ROUND2_BOOST_AMOUNT = 1 ;
+const ROUND2_MAX_SPEED    = 8;
 
 
 
