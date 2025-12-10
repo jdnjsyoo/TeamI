@@ -85,7 +85,15 @@ function loadRound1Assets() {
         }
         npcAnimationFrames[index] = frames;
     });
+
+
+
+
+
 }
+
+
+
 
 
 class Round1 {
@@ -281,6 +289,7 @@ class Round1 {
   if (key === 'l' || key === 'L') {
     if (typeof switchToRound2 === "function") {
       switchToRound2();
+      
     }
     console.log("DEBUG: Force switch to Round 2 by L key");
     return false;   // 다른 키 처리 안 하도록 바로 종료
