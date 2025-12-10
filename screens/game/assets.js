@@ -58,8 +58,8 @@ function gameScreenPreload() {
     loadImage('assets/npcChracter/sitting/서울대입구_책_2.png')
   ];
   npcAnimationFrames[5] = [
-    loadImage('assets/npcChracter/sitting/성수_쇼핑백_2.png'),
-    loadImage('assets/npcChracter/sitting/성수_쇼핑백_3.png')
+    loadImage('assets/npcChracter/sitting/성수_쇼핑백_1.png'),
+    loadImage('assets/npcChracter/sitting/성수_쇼핑백_2.png')
   ];
   npcAnimationFrames[6] = [
     loadImage('assets/npcChracter/sitting/잠실_코트_1.png'),

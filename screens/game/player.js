@@ -68,10 +68,10 @@ function drawPlayer(round, npcBottomWorldY) {
     // 바닥 기준으로 위로 sitHeight만큼 올려서 y 정렬
     let sitTopY = playerBottomY - sitH;
 
-    // ⭐ 정답을 맞춘 경우: 시청 캐릭터가 앉아 있던 좌석 중심에 정확히 앉기
+    // ⭐ 정답을 맞춘 경우: 비어 있는 좌석 중심에 정확히 앉기
     let sitX;
-    if (round.npc2SeatChosen && round.npc2OriginalSeatX !== null) {
-      sitX = round.npc2OriginalSeatX - sitW / 2;   // 좌석 중심 - 반 너비
+    if (round.playerShouldSit && round.targetSeatX !== null) {
+      sitX = round.targetSeatX - sitW / 2;   // 좌석 중심 - 반 너비
     } else {
       sitX = round.x;
     }
