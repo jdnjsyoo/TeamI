@@ -352,6 +352,16 @@ if (round2Scripts &&
   // 키 입력
   // ==============
   keyPressed() {
+    // ✅ 바로 3라운드 넘어가는 L 치트키 (디버그용)
+    if (key === 'l' || key === 'L') {
+        if (typeof switchToRound3 === "function") {
+          switchToRound3();
+          
+        }
+        console.log("DEBUG: Force switch to Round 3 by L key");
+        return false;   // 다른 키 처리 안 하도록 바로 종료
+    }
+
     // 스페이스바
   if (keyCode === 32) {
     // 1) 인트로 스크립트 진행 중이면 다음 줄
@@ -380,6 +390,16 @@ if (round2Scripts &&
       return false;
     }
   }
+
+  if ((key === 'n' || key === 'N')) {
+    if (this.resultScriptPlayer && this.resultScriptPlayer.isFinished()) {
+        if (typeof switchToRound3 === "function") {
+            switchToRound3();
+        }
+        console.log("Switching to Round 3!");
+        return false;
+    }
+}
 
   return false;
   }

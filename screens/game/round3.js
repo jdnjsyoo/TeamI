@@ -47,6 +47,7 @@ class Round3 {
     this.hasPlayedIntro = false;       // 인트로 한 번만 재생하기 위한 플래그
 
     this.jamsilStandingImg = null;
+    this.gangnamStandingImg = null; // 추가된 부분
 
     this.standingOffsetX = 0;
     this.canMoveRightInStage2 = false;
@@ -78,6 +79,8 @@ class Round3 {
     this.lightningEffectImg = loadImage("assets/buttons/번개 효과.png");
 
     // 🔹 3번 캐릭터가 서 있을 때 쓸 강남 직장인 스탠딩 이미지는
+    this.gangnamStandingImg = loadImage("assets/npcChracter/standing/강남_직장인_스탠딩.png");
+
     // npc 쪽 로딩/드로잉 코드(drawNpcs)에서
     // "assets/npcCharacter/standing/강남_직장인_스탠딩.png"
     // 으로 이미 세팅해 둔 걸로 가정하고 사용하게 될 거야.
@@ -98,6 +101,7 @@ class Round3 {
     this.npc2OriginalSeatX = this.npcPositions[2].x;
 
     this.preloadAssets();
+    this.enterStage2();
   }
 
   enterStage2() {
@@ -122,9 +126,9 @@ class Round3 {
     this.hoveredSitNpcIndex = -1;
 
     // ⭐ 아직 인트로를 안 본 경우 → 여기서 처음 한 번만 재생
-    if (!this.hasPlayedIntro && typeof round1Scripts !== "undefined" && round1Scripts.round1_intro) {
+    if (!this.hasPlayedIntro && typeof round3Scripts !== "undefined" && round3Scripts.round3_intro) {
       this.introScriptPlayer = new ScriptPlayer(
-        round1Scripts.round1_intro,
+        round3Scripts.round3_intro,
         () => {
           // 인트로 끝난 시점에서부터 타이머/제한시간 시작
           this.introState = "finished";
