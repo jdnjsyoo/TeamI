@@ -3,7 +3,7 @@
 // =======================
 function loadRound2Assets() {
   // 1) 1라운드 방식 그대로 사용해서
-  //    역 + NPC(7명) 전부 새로 뽑기
+  //    역 + NPC(7명) 전부 새로 뽑기 
   loadRound1Assets();
 
   // 2) Round2에서는 7번 자리가 "빈 자리"여야 하니까, 인덱스 6 비우기
@@ -273,7 +273,7 @@ if (round2Scripts &&
   // 이동 로직
   // ==============
   handleMovement() {
-    
+      if (!this.gameStarted || this.round2Finished) return;
   
     // 좌우 이동: Round1과 같은 방식 (speed는 Round2 전용)
     if (keyIsDown(LEFT_ARROW)) {
@@ -369,6 +369,7 @@ if (round2Scripts &&
       this.awaitingStart = false;
       this.showPressEnter = false;
       this.stage2StartTime = millis(); // 필요하면 타이머 시작
+      this.round2EndTime = millis() + ROUND2_TIME_LIMIT;
 
       return false;
     }
@@ -450,8 +451,6 @@ if (round2Scripts &&
 
 
 
-      console.log("ROUND 2 SUCCESS: clicked arrow!");
-      return;
     }
 
     // --- 화살표가 아닌 곳 클릭 → 속도 증가 ---
@@ -479,5 +478,5 @@ const ROUND2_BASE_SPEED   = 0.1;
 const ROUND2_BOOST_AMOUNT = 1 ;
 const ROUND2_MAX_SPEED    = 8;
 
-const ROUND2_TIME_LIMIT   = 6000;
+const ROUND2_TIME_LIMIT   = 8000;
 
