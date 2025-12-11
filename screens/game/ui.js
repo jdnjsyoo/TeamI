@@ -248,7 +248,7 @@ function drawUi(instance) {
     }
 
     // ⭐⭐ 게임 시작 전 "PRESS SPACE" 오버레이
-    if (instance.showPressEnter && instance.stage === 1 && pressEnterImg) {
+    if (instance.showPressEnter  && pressEnterImg&&(instance.stage === 1 || instance.isRound2)) {
         push();
         // 화면 살짝 어둡게
         noStroke();
