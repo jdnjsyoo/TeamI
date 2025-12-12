@@ -20,6 +20,8 @@ function gameScreenPreload() {
   // 라운드 별 스크립트 로드
   round1Scripts = loadJSON('assets/scripts/round1.json');
   round2Scripts = loadJSON("assets/scripts/round2.json"); 
+round3Scripts = loadJSON("assets/scripts/round3.json"); 
+
 
   //press enter to start
   pressEnterImg = loadImage("assets/start/pressenter.png");
