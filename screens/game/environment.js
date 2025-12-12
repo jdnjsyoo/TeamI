@@ -7,10 +7,15 @@ class Environment {
 
   display(isStationImgActive, stage) {
     const outsideYOffset = 250;
+    let stage2YShift = 0; // stage 2일 때 적용할 Y축 이동량
+
+    if (stage === 2) {
+      stage2YShift = -220; // 위로 100px 이동
+    }
 
     if (this.cityImg && !isStationImgActive) {
       let sScale = 0.55;
-      let yPos = outsideYOffset;
+      let yPos = outsideYOffset + stage2YShift;
       
       let sw = this.cityImg.width * sScale;
       let sh = this.cityImg.height * sScale;
@@ -34,7 +39,7 @@ class Environment {
 
       const maxX = (stage === 2 && backgr) ? backgr.width : width;
       for (let xx = cloudX; xx < maxX; xx += cw) {
-        image(this.cloudImg, xx, -40 + outsideYOffset, cw, ch);
+        image(this.cloudImg, xx, -40 + outsideYOffset + stage2YShift, cw, ch);
       }
     }
 

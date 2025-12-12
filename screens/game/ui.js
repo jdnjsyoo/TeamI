@@ -191,7 +191,18 @@ function drawUi(instance) {
         const newWidth = timeBarBase.width * (newHeight / timeBarBase.height);
 
         const elapsedTime = millis() - instance.timerStartTime;
-        const timeRatio = max(0, 1 - (elapsedTime / stage2Duration));
+
+        // 라운드에 맞는 지속 시간 선택
+        let duration;
+        if (instance.isRound2) {
+            // Round2 에서는 ROUND2_TIME_LIMIT 사용
+            duration = ROUND2_TIME_LIMIT;
+        } else {
+            // Round1 에서는 stage2DurationRound1 사용
+            duration = stage2DurationRound1;
+        }
+        
+        const timeRatio = max(0, 1 - (elapsedTime / duration));
         
         // Calculate the shrinking width for both destination and source
         const shrinkingDestWidth = newWidth * timeRatio;
