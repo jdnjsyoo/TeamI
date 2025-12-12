@@ -19,7 +19,7 @@ function gameScreenPreload() {
   pressEnterImg = loadImage("assets/start/pressenter.png");
 
   // 지하철 내부
-  backgr = loadImage('assets/subwayBackground/낮(임산부석O) 창문 투명 - 대화창X.png');
+  backgr = loadImage('assets/subwayBackground/낮(임산부석X) 창문 투명 - 대화창X.png');
   // 대화창 이미지
   dialogImg = loadImage('assets/subwayBackground/대화창.png');
 
