@@ -155,7 +155,7 @@ if (round2Scripts &&
     // handleNpcBehavior(this, ...)  // 라운드2에서는 자리양보 연출 없음
 
     this.y = backgr ? backgr.height - 80 : groundY;
-    this.environment.display(false, 2);
+    //this.environment.display(false, 2);
 
 
     // 플레이어 이동
@@ -268,7 +268,21 @@ scrollY = constrain(scrollY, -backgr.height + viewH + camPad, camPad);
     let worldMouseX = (mouseX / stageScale) - (scrollX - 50);
     let worldMouseY = (mouseY / stageScale) - (scrollY - 50 + worldShiftY + yOffsetForMouse);
 
+    // =======================
+// ✅ 창밖 배경(환경) 패럴랙스: 카메라 따라 움직이게
+// =======================
+const camPad2 = 50; // translate에서 쓰는 -50과 같은 값
+const camWorldX = -(scrollX - camPad2);   // 카메라의 월드 X 위치(대략)
+const parallax = 0.25;                  // 0.15~0.35 추천 (작을수록 천천히 흐름)
+
+push();
+resetMatrix();                           // ✅ 스케일/카메라 영향 제거 -> 화면 기준으로 그림
+translate(-camWorldX * parallax * stageScale, 0);  // ✅ 화면 픽셀 단위로 살짝 이동
+this.environment.display(false, 2);      // ✅ 이제 '멈추지 않고' 부드럽게 따라옴
+pop();
+
     push();
+    
     scale(stageScale);
     const stageYOffset = 45;
     translate(scrollX - 50, scrollY - 50 + worldShiftY + stageYOffset);
