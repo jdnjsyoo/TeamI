@@ -35,7 +35,7 @@ class ScriptPlayer {
     } else if (this.state === 'waiting') {
         // 마지막 줄이 아니면 1초 후 자동으로 넘어감
         if (this.currentLineIndex < this.lines.length - 1) {
-            if (millis() - this.lineWaitStartTime > 1000) {
+            if (millis() - this.lineWaitStartTime > 1600) {
                 this.currentLineIndex++;
                 this.typingIndex = 0;
                 this.displayedText = '';

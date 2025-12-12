@@ -311,7 +311,7 @@ if (round2Scripts &&
 
     // Hover 감지
   const isHovered =
-    worldMouseX >= drawX && worldMouseX <= drawX + w &&
+    worldMouseX >= drawX+120 && worldMouseX <= drawX + w -120 &&
     worldMouseY >= drawY && worldMouseY <= drawY + h;
 
   this.isTargetArrowHovered = isHovered;
@@ -451,7 +451,7 @@ if (round2Scripts &&
       this.round2Finished = true;
       this.round2Result = "success";
 
-      const millgi = 20; // 살짝 왼쪽으로
+      const millgi = 0; // 살짝 왼쪽으로
       this.x = seatX - millgi;
 
       this.isPlayerAutoMovingToSeat = false;
@@ -462,7 +462,7 @@ if (round2Scripts &&
       this.resultOverlayStartTime = millis();
 
       // 🔥 성공 스크립트 시작
-  if (round2Scripts && round2Scripts.round2_success && typeof ScriptPlayer === "function") {
+    if (round2Scripts && round2Scripts.round2_success && typeof ScriptPlayer === "function") {
     this.resultScriptPlayer = new ScriptPlayer(round2Scripts.round2_success);
   }
 
