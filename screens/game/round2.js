@@ -4,7 +4,7 @@
 function loadRound2Assets() {
   // 1) 1라운드 방식 그대로 사용해서
   //    역 + NPC(7명) 전부 새로 뽑기 
-  loadRound1Assets();
+  preloadRound1Assets();
 
   // 2) Round2에서는 7번 자리가 "빈 자리"여야 하니까, 인덱스 6 비우기
   const emptyIndex = 6;  // 0~6 중 7번째 좌석

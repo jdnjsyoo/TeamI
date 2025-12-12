@@ -77,8 +77,9 @@ function drawNpcs(round, worldMouseX, worldMouseY) {
             continue;
         }
 
-        const currentFrameIndex = round.npcCurrentFrameIndex[i];
-        let imgToDraw = npcAnimationFrames[i][currentFrameIndex];
+        // Round3에서 npcCurrentFrameIndex가 null일 수 있으니 방어 코드 추가
+        const currentFrameIndex = (round.npcCurrentFrameIndex && round.npcCurrentFrameIndex[i] != null) ? round.npcCurrentFrameIndex[i] : 0;
+        let imgToDraw = (npcAnimationFrames[i] && npcAnimationFrames[i][currentFrameIndex]) ? npcAnimationFrames[i][currentFrameIndex] : null;
 
         // 일어서야 할 NPC인 경우, 서 있는 이미지로 교체
         if (i === round.npcStandingIndex && npcStandImgs[i]) {
