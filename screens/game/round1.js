@@ -10,6 +10,8 @@ const npcData = {
     "홍대": [{ spec: "애니", frames: 3 }, { spec: "탈색", frames: 3 }]
 };
 
+const stage2DurationRound1 = 20000; // 라운드 1의 stage 2 지속 시간: 20초
+
 // Fisher-Yates shuffle to randomize array in place
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -21,54 +23,41 @@ function shuffle(array) {
 let correctNpcIndex = -1; // 정답 NPC의 인덱스를 저장할 전역 변수
 let selectedNpcs = []; // 선택된 NPC 정보를 저장할 전역 변수
 
-function loadRound1Assets() {
-    // ... (기존의 역 관련 에셋 초기화 및 NPC 선택 로직)
-    // 1. 역 관련 에셋 초기화
+function preloadRound1Assets() {
+    // 1. 역 선택 로직 (RandomLogic.md 기반으로 수정)
     const allStations = Object.keys(npcData);
-    currentStationName = random(allStations); // 역 이름 랜덤 선택
-    
+    shuffle(allStations);
+    const roundStations = allStations.slice(0, 7); // 이번 라운드에 사용할 7개의 역
+
+    // 2. 정답 역(currentStationName) 설정
+    currentStationName = random(roundStations); 
+
+    // 3. 역 관련 에셋 로드
     stationImg = loadImage(`assets/scenery/역_${currentStationName}.PNG`);
     cityImg = loadImage(`assets/scenery/${currentStationName}.png`);
+    cloudImg = loadImage('assets/scenery/구름.png');
 
-    // 2. NPC 랜덤 선택 로직
-    selectedNpcs = []; // 배열 초기화
-
-    // 정답 NPC 선택
-    const correctNpcPool = npcData[currentStationName];
-    const correctNpcInfo = random(correctNpcPool);
-    const correctNpc = {
-        station: currentStationName,
-        spec: correctNpcInfo.spec,
-        isCorrect: true,
-        frameCount: correctNpcInfo.frames
-    };
-    selectedNpcs.push(correctNpc);
-
-    // 오답 NPC 선택
-    const otherStations = allStations.filter(station => station !== currentStationName);
-    shuffle(otherStations);
-    
-    for (let i = 0; i < 6; i++) {
-        const station = otherStations[i];
-        const wrongNpcPool = npcData[station];
-        const wrongNpcInfo = random(wrongNpcPool);
+    // 4. 7명의 NPC 정보 생성
+    selectedNpcs = [];
+    roundStations.forEach(station => {
+        const isCorrect = (station === currentStationName);
+        const npcPool = npcData[station];
+        const npcInfo = random(npcPool);
+        
         selectedNpcs.push({
             station: station,
-            spec: wrongNpcInfo.spec,
-            isCorrect: false,
-            frameCount: wrongNpcInfo.frames
+            spec: npcInfo.spec,
+            isCorrect: isCorrect,
+            frameCount: npcInfo.frames
         });
-    }
+    });
 
-    // 최종 NPC 리스트 랜덤화 (자리를 섞기 위함)
+    // 5. 최종 NPC 리스트 랜덤화 (자리 배치)
     shuffle(selectedNpcs);
 
-    // 정답 NPC의 최종 인덱스 찾기
-    correctNpcIndex = selectedNpcs.findIndex(npc => npc.isCorrect);
-
-    // 3. 선택된 NPC 에셋 로드
+    // 6. 선택된 NPC 에셋 로드 (이미지 로딩)
     npcAnimationFrames = [];
-    npcStandImgs = []; // npcStandImgs 초기화
+    npcStandImgs = []; 
 
     selectedNpcs.forEach((npc, index) => {
         let frames = [];
@@ -86,10 +75,7 @@ function loadRound1Assets() {
         npcAnimationFrames[index] = frames;
     });
 
-
-
-
-
+    console.log("--- preloadRound1Assets executed ---");
 }
 
 
@@ -120,8 +106,8 @@ class Round1 {
 
     // Game flow state
     this.stage = 1;
-    this.currentStationName = '';
-    this.correctNpcIndex = correctNpcIndex; // 전역 변수에서 정답 인덱스 가져오기
+    this.currentStationName = ''; // setup에서 할당
+    this.correctNpcIndex = -1; // setup에서 할당
     this.environment = new Environment(cityImg, cloudImg, stationImg);
     
     // Interaction state
@@ -163,8 +149,10 @@ class Round1 {
   }
 
   setup() {
-    loadRound1Assets(); // 라운드 1 에셋 로드
-    this.correctNpcIndex = correctNpcIndex; // 최신 정답 인덱스로 업데이트
+    // preload에서 로드된 정보를 기반으로 인스턴스 변수 설정
+    this.correctNpcIndex = selectedNpcs.findIndex(npc => npc.isCorrect);
+    this.currentStationName = currentStationName; // 전역 변수에서 가져오기
+
     createCanvas(1024, 869);
 
     for (let i = 0; i < 7; i++) {
@@ -173,6 +161,11 @@ class Round1 {
         y: seatBaseY,
       };
     }
+    
+    console.log("--- Round1.setup() Debug Info ---");
+    console.log("Correct NPC Index (instance):", this.correctNpcIndex);
+    console.log("Selected NPCs:", selectedNpcs);
+    console.log("---------------------------------");
   }
   
   // ... (enterStage2, draw, keyPressed는 일단 유지)
@@ -207,15 +200,16 @@ class Round1 {
       handlePlayerMovement(this);
 
       if (this.stage === 2) {
+        const playerCenterX = this.x + playerScale / 2; // 플레이어 중심 X좌표
         const firstNpcX = startX;
         const sectionWidth = seatSpacing;
-        const rangeStart = firstNpcX - sectionWidth / 2 - 115;
+        const rangeStart = firstNpcX - sectionWidth / 2; // 첫 NPC의 하이라이트 시작 범위
         const numNpcs = 7;
         const rangeEnd = rangeStart + sectionWidth * numNpcs;
 
         this.highlightedNpcIndex = -1;
-        if (this.x >= rangeStart && this.x < rangeEnd) {
-          const relativeX = this.x - rangeStart;
+        if (playerCenterX >= rangeStart && playerCenterX < rangeEnd) {
+          const relativeX = playerCenterX - rangeStart;
           const index = Math.floor(relativeX / sectionWidth);
           this.highlightedNpcIndex = constrain(index, 0, numNpcs - 1);
         }
@@ -273,7 +267,7 @@ class Round1 {
     drawUi(this);
 
     if (this.gameStarted && this.stage === 2 && this.stage2StartTime !== null && !this.isStationImgActive) {
-      if (millis() - this.stage2StartTime >= stage2Duration) {
+      if (millis() - this.stage2StartTime >= stage2DurationRound1) {
         this.isStationImgActive = true;
         this.stage = 1;
         this.selectedNpcIndex = this.highlightedNpcIndex;
@@ -384,9 +378,15 @@ class Round1 {
       this.sitButtonPressTime = millis();
       
       // 정답 확인 로직
+      console.log("--- mousePressed Debug Info (Sit Here Button) ---");
+      console.log("Hovered NPC Index:", this.hoveredSitNpcIndex);
+      console.log("Correct NPC Index (instance):", this.correctNpcIndex);
+      console.log("Comparison result (hovered === correct):", this.hoveredSitNpcIndex === this.correctNpcIndex);
+
       if (this.hoveredSitNpcIndex === this.correctNpcIndex) {
         // --- 정답 ---
         this.resultOverlayType = 'success';
+        this.resultOverlayStartTime = millis();
         this.npcStandingIndex = this.correctNpcIndex;
         this.npcStandTriggerTime = millis();
         this.playerShouldSit = true;
@@ -395,7 +395,7 @@ class Round1 {
         this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {
           console.log("Success script finished.");
         });
-
+        console.log("Decision: SUCCESS");
       } else {
         // --- 오답 ---
         this.resultOverlayType = 'fail';
@@ -404,7 +404,9 @@ class Round1 {
         this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {
           console.log("Fail script finished.");
         });
+        console.log("Decision: FAIL");
       }
+      console.log("-----------------------------------------------");
       return;
     }
     

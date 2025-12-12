@@ -41,7 +41,7 @@ let npcTargetHeight = 280;   // 잠실/군인 정도 키로 통일
 let isNpc2Standing = false;  // 두 번째 NPC가 일어났는지 여부
 let stage = 1; // 1 or 2
 let currentStationName; // 랜덤으로 선택된 역 이름
-const stations = ['강남', '강변', '성수', '시청', '을지로', '잠실', '홍대']; // 지하철역 목록
+const stations = ['강남', '강변', '성수', '시청', '서울대입구', '을지로', '잠실', '홍대']; // 지하철역 목록
 
 // 버튼 이미지
 
