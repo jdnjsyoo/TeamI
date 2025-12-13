@@ -113,6 +113,8 @@ class Round1 {
     this.npcHasLeftScreen = false;
     this.playerShouldSit = false; // 플레이어가 앉아야 하는지 여부
     this.targetSeatX = null; // 플레이어가 앉을 좌석의 X 좌표
+    this.playerMoveStartTime = null;
+    this.npcIsActuallyWalking = false;
 
     // Game flow state
     this.stage = 1;
@@ -310,7 +312,18 @@ class Round1 {
       image(backgr, 0, 0, backgr.width, backgr.height);
     }
     
-    // UI는 항상 그림 (인트로 포함)
+    // 플레이어 이동 타이머 체크
+    if (this.playerMoveStartTime !== null && millis() >= this.playerMoveStartTime) {
+      if (this.playerShouldSit) {
+          this.isPlayerAutoMovingToSeat = true;
+      }
+      this.playerMoveStartTime = null; // 한 번만 실행되도록 초기화
+    }
+
+    // Check if the player has just sat down to show success overlay
+    if (this.playerDir === 'sit' && this.resultOverlayType === 'success' && this.resultOverlayStartTime === null) {
+        this.resultOverlayStartTime = millis();
+    }
     drawUi(this);
 
     if (this.gameStarted && this.stage === 2 && this.stage2StartTime !== null && !this.isStationImgActive) {
@@ -459,25 +472,31 @@ class Round1 {
       if (this.hoveredSitNpcIndex === this.correctNpcIndex) {
         // --- 정답 ---
         this.resultOverlayType = 'success';
-        this.resultOverlayStartTime = millis();
         this.npcStandingIndex = this.correctNpcIndex;
         this.npcStandTriggerTime = millis();
-        this.playerShouldSit = true;
+        this.playerShouldSit = false; // 일단 false, 2초 뒤 true로
         this.targetSeatX = this.npcPositions[this.correctNpcIndex].x;
+        this.playerDir = "right"; // 일단 방향 유지
         // 성공 스크립트 실행
         this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {
           console.log("Success script finished.");
         });
+        // 2초 뒤에 플레이어 착석 처리 (추가 이동 없이)
+        setTimeout(() => {
+          this.playerDir = "sit";
+          this.playerShouldSit = true;
+        }, 4000);
         console.log("Decision: SUCCESS");
       } else {
         // --- 오답 ---
         this.resultOverlayType = 'fail';
-        this.resultOverlayStartTime = millis();
+        this.resultOverlayStartTime = millis(); // 실패 오버레이는 즉시 표시
         // 실패 시에도 정답 NPC가 일어나 나가도록 처리
         this.npcStandingIndex = this.correctNpcIndex;
         this.npcStandTriggerTime = millis();
-        this.playerShouldSit = true; // 플레이어도 앉도록 처리 (선택한 자리에 앉는 것이 아니라, 맞든 틀리든 앉아서 결과를 기다리는 것으로 해석)
-        this.targetSeatX = this.npcPositions[this.hoveredSitNpcIndex].x; // 오답인 경우, 플레이어는 본인이 선택한 자리에 앉음
+        this.playerShouldSit = false; // 플레이어는 움직이지 않음
+        this.targetSeatX = null; 
+        
          // 실패 스크립트 실행
         this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {
         });

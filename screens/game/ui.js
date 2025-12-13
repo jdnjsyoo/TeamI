@@ -229,7 +229,7 @@ function drawUi(instance) {
 
     // ⭐ SUCCESS / FAIL 오버레이 및 스크립트
     if (instance.resultOverlayType && instance.resultOverlayStartTime !== null) {
-        if (millis() - instance.resultOverlayStartTime >= 2000) {
+        if (millis() - instance.resultOverlayStartTime >= 500) {
             let overlayImg =
                 instance.resultOverlayType === "success" ? successImg :
                 instance.resultOverlayType === "fail"    ? failImg    : null;
