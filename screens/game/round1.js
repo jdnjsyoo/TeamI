@@ -1,3 +1,6 @@
+let scriptBgSound;
+let roundPlayingSound;
+
 // 모든 역의 NPC 정보를 담는 객체
 const npcData = {
     "강남": [{ spec: "직장인", frames: 2 }, { spec: "화장", frames: 2 }],
@@ -10,15 +13,15 @@ const npcData = {
     "홍대": [{ spec: "애니", frames: 3 }, { spec: "탈색", frames: 3 }]
 };
 
-const stage2DurationRound1 = 20000; // 라운드 1의 stage 2 지속 시간: 20초
+const stage2DurationRound1 = 30000; // 라운드 1의 stage 2 지속 시간: 30초
 
 // Fisher-Yates shuffle to randomize array in place
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
     }
-}
+  }
 
 let correctNpcIndex = -1; // 정답 NPC의 인덱스를 저장할 전역 변수
 let selectedNpcs = []; // 선택된 NPC 정보를 저장할 전역 변수
@@ -75,11 +78,18 @@ function preloadRound1Assets() {
         npcAnimationFrames[index] = frames;
     });
 
+    // 사운드 로드
+    if (typeof loadSound === 'function') {
+        scriptBgSound = loadSound('assets/sound/script_bg.wav', () => {
+            scriptBgSound.setVolume(0.5); // 기본 볼륨 50%
+        });
+        roundPlayingSound = loadSound('assets/sound/round_playing.mp3', () => {
+            roundPlayingSound.setVolume(0.5); // 기본 볼륨 50%
+        });
+    }
+
     console.log("--- preloadRound1Assets executed ---");
 }
-
-
-
 
 
 class Round1 {
@@ -135,12 +145,21 @@ class Round1 {
     this.awaitingStart = false; // 스크립트 끝나고 스페이스바 기다릴 때 true
     this.introState = 'playing'; // 시작하자마자 재생
 
+    // 인트로 시작 시 배경 음악 재생
+    if (scriptBgSound && !scriptBgSound.isPlaying()) {
+        scriptBgSound.loop();
+    }
+
     // 스크립트 플레이어 생성 및 인트로 시작
     this.introScriptPlayer = new ScriptPlayer(round1Scripts.round1_intro, () => {
       // 스크립트 완료 콜백
       this.introState = 'finished';
       this.showPressEnter = true;   // "PRESS SPACE" 메시지 표시
       this.awaitingStart = true;    // 최종 스페이스바 입력 대기
+      // 인트로 완료 시 배경 음악 중지
+      if (scriptBgSound && scriptBgSound.isPlaying()) {
+          scriptBgSound.stop();
+      }
     });
   }
 
@@ -180,9 +199,18 @@ class Round1 {
     if (timeBar) {
       this.timerWidth = timeBar.width;
     }
+    // 인트로 음악이 재생 중이었다면 중지
+    if (scriptBgSound && scriptBgSound.isPlaying()) {
+        scriptBgSound.stop();
+    }
+    // 게임 플레이 음악 시작
+    if (roundPlayingSound && !roundPlayingSound.isPlaying()) {
+        roundPlayingSound.loop();
+    }
   }
 
   draw() {
+    // (3초 대기 없이) 인트로 마지막 줄과 동시에 showPressEnter 표시
     background(0);
 
     // 게임 로직은 gameStarted 플래그로 제어
@@ -291,6 +319,13 @@ class Round1 {
         this.stage = 1;
         this.selectedNpcIndex = this.highlightedNpcIndex;
         this.stage2StartTime = null;
+        // Stage 2 타이머가 끝나서 Stage 1으로 돌아올 때 음악 변경
+        if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+            roundPlayingSound.stop();
+        }
+        if (scriptBgSound && !scriptBgSound.isPlaying()) {
+            scriptBgSound.loop();
+        }
       }
     }
   }
@@ -320,15 +355,20 @@ class Round1 {
   }
 
     if (this.resultScriptPlayer) {
-      
       if (keyCode === 32) { // 스페이스바
         if (!this.resultScriptPlayer.isFinished()) {
           this.resultScriptPlayer.next();
         }
-      } else if ((key === 'n' || key === 'N') && this.resultScriptPlayer.isFinished()) {
-        // TODO: Round 2로 넘어가는 로직
+      }
+      if ((key === 'n' || key === 'N') && this.resultScriptPlayer.isFinished()) {
+        // resultScriptPlayer가 끝난 후에만 round2로 넘어감
         if (typeof switchToRound2 === "function") {
-        switchToRound2();}
+          switchToRound2();
+          // Round 2로 넘어갈 때 게임 플레이 음악 중지
+          if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+            roundPlayingSound.stop();
+          }
+        }
         console.log("Switching to Round 2!");
       }
       return false;
@@ -354,14 +394,17 @@ class Round1 {
           this.stage = 1;
           this.selectedNpcIndex = this.highlightedNpcIndex;
           this.stage2StartTime = null;
+          // Stage 2에서 Stage 1으로 돌아올 때 음악 변경
+          if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+              roundPlayingSound.stop();
+          }
+          if (scriptBgSound && !scriptBgSound.isPlaying()) {
+              scriptBgSound.loop();
+          }
         }
       }
-    } else if (key === 'n' || key === 'N') {
-      // 'n' 키: 2번 NPC 일어나기 (수동 디버그용)
-      if (this.gameStarted) {
-        // this.isNpc2Standing = true; // 이 로직은 이제 사용하지 않음
-      }
     }
+    // 게임 중에는 n키로 round2로 넘어가지 않음 (위에서만 처리)
     return false; // 기본 키 동작 방지
   }
 
@@ -430,22 +473,16 @@ class Round1 {
         // --- 오답 ---
         this.resultOverlayType = 'fail';
         this.resultOverlayStartTime = millis();
+        // 실패 시에도 정답 NPC가 일어나 나가도록 처리
+        this.npcStandingIndex = this.correctNpcIndex;
+        this.npcStandTriggerTime = millis();
+        this.playerShouldSit = true; // 플레이어도 앉도록 처리 (선택한 자리에 앉는 것이 아니라, 맞든 틀리든 앉아서 결과를 기다리는 것으로 해석)
+        this.targetSeatX = this.npcPositions[this.hoveredSitNpcIndex].x; // 오답인 경우, 플레이어는 본인이 선택한 자리에 앉음
          // 실패 스크립트 실행
         this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {
-          console.log("Fail script finished.");
         });
-        console.log("Decision: FAIL");
       }
-      console.log("-----------------------------------------------");
       return;
     }
-    
-    // --- 버튼이 아닌 곳 클릭 (속도 부스트) ---
-    speed += boostAmount;
-    if (speed > maxBoost) speed = maxBoost;
-    setTimeout(() => {
-      speed -= boostAmount;
-      if (speed < baseSpeed) speed = baseSpeed;
-    }, 1000);
   }
 }

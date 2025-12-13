@@ -46,7 +46,7 @@ const stations = ['강남', '강변', '성수', '시청', '서울대입구', '�
 // 버튼 이미지
 
 let sitArrowImg; 
-let stopButton, quitButton, settingButton, gameScore;
+let stopButton, settingButton, gameScore;
 // 버튼 히트박스(스크린 좌표 기준)
 let stopBtnX, stopBtnY, stopBtnW, stopBtnH;
 let quitBtnX, quitBtnY, quitBtnW, quitBtnH;

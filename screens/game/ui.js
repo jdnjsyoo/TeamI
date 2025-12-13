@@ -27,7 +27,10 @@ class ScriptPlayer {
             this.typingIndex++;
             this.displayedText = currentLine.substring(0, this.typingIndex);
           } else {
-            // 현재 줄 타이핑 완료
+            // 현재 줄 타이핑 완료, 사운드 중지
+            if (typingSound && typingSound.isLoaded()) {
+              typingSound.stop();
+            }
             this.state = 'waiting';
             this.lineWaitStartTime = millis();
           }
@@ -39,13 +42,19 @@ class ScriptPlayer {
   // 다음으로 넘기기 (스페이스바)
   next() {
     if (this.state === 'typing') {
-      // 타이핑 중이면 즉시 전체 줄 표시
+      // 타이핑 중이면 즉시 전체 줄 표시, 사운드 중지
+      if (typingSound && typingSound.isLoaded()) {
+        typingSound.stop();
+      }
       this.displayedText = this.lines[this.currentLineIndex];
       this.typingIndex = this.lines[this.currentLineIndex].length;
       this.state = 'waiting';
       this.lineWaitStartTime = millis();
     } else if (this.state === 'waiting') {
-      // 다음 줄로 이동 (자동 넘김을 기다리지 않거나, 마지막 줄을 넘길 때)
+      // 다음 줄로 이동 전, 현재 사운드 중지
+      if (typingSound && typingSound.isLoaded()) {
+        typingSound.stop();
+      }
       this.currentLineIndex++;
       if (this.currentLineIndex >= this.lines.length) {
         // 모든 스크립트 종료
@@ -54,7 +63,10 @@ class ScriptPlayer {
           this.onFinished();
         }
       } else {
-        // 다음 줄 타이핑 시작
+        // 다음 줄 타이핑 시작, 사운드 재생
+        if (typingSound && typingSound.isLoaded()) {
+          typingSound.loop();
+        }
         this.typingIndex = 0;
         this.displayedText = '';
         this.state = 'typing';
@@ -138,35 +150,26 @@ function drawUi(instance) {
     let buttonX = width - buttonWidth - 10; // 오른쪽 여백 10px
     const buttonY = 20; // 위쪽 여백 20px
 
-    if (stopButton) {
-        image(stopButton, buttonX, buttonY, buttonWidth, buttonHeight);
-        // stop 버튼 히트박스 저장
-        stopBtnX = buttonX;
-        stopBtnY = buttonY;
-        stopBtnW = buttonWidth;
-        stopBtnH = buttonHeight;
-
-        buttonX -= buttonWidth / 2 + buttonGap;
-    }
-
-    if (quitButton) {
-        image(quitButton, buttonX, buttonY, buttonWidth, buttonHeight);
-        // quit 버튼 히트박스 저장
-        quitBtnX = buttonX;
-        quitBtnY = buttonY;
-        quitBtnW = buttonWidth;
-        quitBtnH = buttonHeight;
-
-        buttonX -= buttonWidth / 2 + buttonGap;
-    }
-
+    // settingButton 먼저
     if (settingButton) {
-        image(settingButton, buttonX, buttonY, buttonWidth, buttonHeight);
-        // setting 버튼 히트박스 저장
-        settingBtnX = buttonX;
-        settingBtnY = buttonY;
-        settingBtnW = buttonWidth;
-        settingBtnH = buttonHeight;
+      image(settingButton, buttonX, buttonY, buttonWidth, buttonHeight);
+      // setting 버튼 히트박스 저장
+      settingBtnX = buttonX;
+      settingBtnY = buttonY;
+      settingBtnW = buttonWidth;
+      settingBtnH = buttonHeight;
+
+      buttonX -= buttonWidth / 2 + buttonGap;
+    }
+
+    // stopButton 나중
+    if (stopButton) {
+      image(stopButton, buttonX, buttonY, buttonWidth, buttonHeight);
+      // stop 버튼 히트박스 저장
+      stopBtnX = buttonX;
+      stopBtnY = buttonY;
+      stopBtnW = buttonWidth;
+      stopBtnH = buttonHeight;
     }
     pop();
 
