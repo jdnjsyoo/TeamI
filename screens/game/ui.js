@@ -32,17 +32,8 @@ class ScriptPlayer {
             this.lineWaitStartTime = millis();
           }
         }
-    } else if (this.state === 'waiting') {
-        // 마지막 줄이 아니면 1초 후 자동으로 넘어감
-        if (this.currentLineIndex < this.lines.length - 1) {
-            if (millis() - this.lineWaitStartTime > 1600) {
-                this.currentLineIndex++;
-                this.typingIndex = 0;
-                this.displayedText = '';
-                this.state = 'typing';
-            }
-        }
     }
+    // 'waiting' 상태에서는 아무 동작도 하지 않음 (자동 진행 제거)
   }
 
   // 다음으로 넘기기 (스페이스바)
@@ -75,41 +66,48 @@ class ScriptPlayer {
     return this.state === 'finished';
   }
 
-  // 대화창과 텍스트 그리기
+  // 대화창과 텍스트 그리기 (\n 줄바꿈 지원)
   draw() {
+    // 줄바꿈 지원: \n 기준으로 분리
+    const lines = this.displayedText.split('\n');
+    const lineHeight = 40; // 줄 간격
     if (dialogImg) {
-        let dW = dialogImg.width;
-        let dH = dialogImg.height;
-        let dX = (width - dW) / 2;
-        let dY = height - dH;
-        image(dialogImg, dX, dY, dW, dH);
+      let dW = dialogImg.width;
+      let dH = dialogImg.height;
+      let dX = (width - dW) / 2;
+      let dY = height - dH;
+      image(dialogImg, dX, dY, dW, dH);
 
-        // 텍스트 설정
-        if (dungGeunMoFont) {
-          textFont(dungGeunMoFont);
-        }
-        fill(255);
-        textSize(32);
-        textAlign(LEFT, TOP);
+      // 텍스트 설정
+      if (dungGeunMoFont) {
+        textFont(dungGeunMoFont);
+      }
+      fill(255);
+      textSize(30);
+      textAlign(LEFT, TOP);
 
-        // 텍스트 출력 (dialogImg 내부 위치에 맞게 조정)
-        text(this.displayedText, dX + 50, dY + 60, dW - 100, dH - 100);
+      // 여러 줄 출력
+      for (let i = 0; i < lines.length; i++) {
+        text(lines[i], dX + 50, dY + 35 + i * lineHeight, dW - 100, lineHeight);
+      }
     } else {
-        // dialogImg가 없을 경우의 대체 코드 (기존 검은 박스)
-        fill(0, 0, 0, 180);
-        noStroke();
-        rect(0, height - 250, width, 250);
+      // dialogImg가 없을 경우의 대체 코드 (기존 검은 박스)
+      fill(0, 0, 0, 180);
+      noStroke();
+      rect(0, height - 250, width, 250);
 
-        // 텍스트 설정
-        if (dungGeunMoFont) {
-          textFont(dungGeunMoFont);
-        }
-        fill(255);
-        textSize(32);
-        textAlign(LEFT, TOP);
+      // 텍스트 설정
+      if (dungGeunMoFont) {
+        textFont(dungGeunMoFont);
+      }
+      fill(255);
+      textSize(30);
+      textAlign(LEFT, TOP);
 
-        // 텍스트 출력
-        text(this.displayedText, 50, height - 220, width - 100, 200);
+      // 여러 줄 출력
+      for (let i = 0; i < lines.length; i++) {
+        text(lines[i], 30, height - 250 + i * lineHeight, width - 100, lineHeight);
+      }
     }
   }
 }

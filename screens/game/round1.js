@@ -297,6 +297,17 @@ class Round1 {
 
   // 키 눌림 이벤트 핸들러
   keyPressed() {
+    // 디버깅: 'p' 키로 인트로 마지막 줄로 이동
+    if (key === 'p' || key === 'P') {
+      if (this.introScriptPlayer && this.introState === 'playing') {
+        this.introScriptPlayer.currentLineIndex = this.introScriptPlayer.lines.length - 1;
+        this.introScriptPlayer.typingIndex = this.introScriptPlayer.lines[this.introScriptPlayer.currentLineIndex].length;
+        this.introScriptPlayer.displayedText = this.introScriptPlayer.lines[this.introScriptPlayer.currentLineIndex];
+        this.introScriptPlayer.state = 'waiting';
+        this.introScriptPlayer.lineWaitStartTime = millis();
+      }
+      return false;
+    }
 
      // ✅ 바로 2라운드 넘어가는 L 치트키 (디버그용)
   if (key === 'l' || key === 'L') {
