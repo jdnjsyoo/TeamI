@@ -18,10 +18,10 @@ const stage2DurationRound1 = 30000; // 라운드 1의 stage 2 지속 시간: 30�
 // Fisher-Yates shuffle to randomize array in place
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
     }
-}
+  }
 
 let correctNpcIndex = -1; // 정답 NPC의 인덱스를 저장할 전역 변수
 let selectedNpcs = []; // 선택된 NPC 정보를 저장할 전역 변수
@@ -355,19 +355,19 @@ class Round1 {
   }
 
     if (this.resultScriptPlayer) {
-      
       if (keyCode === 32) { // 스페이스바
         if (!this.resultScriptPlayer.isFinished()) {
           this.resultScriptPlayer.next();
         }
-      } else if ((key === 'n' || key === 'N') && this.resultScriptPlayer.isFinished()) {
-        // TODO: Round 2로 넘어가는 로직
+      }
+      if ((key === 'n' || key === 'N') && this.resultScriptPlayer.isFinished()) {
+        // resultScriptPlayer가 끝난 후에만 round2로 넘어감
         if (typeof switchToRound2 === "function") {
-            switchToRound2();
-            // Round 2로 넘어갈 때 게임 플레이 음악 중지
-            if (roundPlayingSound && roundPlayingSound.isPlaying()) {
-                roundPlayingSound.stop();
-            }
+          switchToRound2();
+          // Round 2로 넘어갈 때 게임 플레이 음악 중지
+          if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+            roundPlayingSound.stop();
+          }
         }
         console.log("Switching to Round 2!");
       }
@@ -403,12 +403,8 @@ class Round1 {
           }
         }
       }
-    } else if (key === 'n' || key === 'N') {
-      // 'n' 키: 2번 NPC 일어나기 (수동 디버그용)
-      if (this.gameStarted) {
-        // this.isNpc2Standing = true; // 이 로직은 이제 사용하지 않음
-      }
     }
+    // 게임 중에는 n키로 round2로 넘어가지 않음 (위에서만 처리)
     return false; // 기본 키 동작 방지
   }
 
@@ -484,11 +480,8 @@ class Round1 {
         this.targetSeatX = this.npcPositions[this.hoveredSitNpcIndex].x; // 오답인 경우, 플레이어는 본인이 선택한 자리에 앉음
          // 실패 스크립트 실행
         this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {
-          console.log("Fail script finished.");
         });
-        console.log("Decision: FAIL");
       }
-      console.log("-----------------------------------------------");
       return;
     }
   }

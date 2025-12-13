@@ -1,3 +1,5 @@
+let roundPlayingSound;
+
 // =======================
 // Round 2용 에셋 로드: 1라운드 방식 재사용 + 7번 자리 비우기
 // =======================
@@ -46,6 +48,12 @@ class Round2 {
     this.isRound2 = true;   // 🔥 이 라운드가 2라운드라는 표시
     this.stage = 2; 
 
+    // 사운드 로드 (이미 로드된 경우 중복 방지)
+    if (typeof loadSound === 'function' && typeof roundPlayingSound === 'undefined') {
+      roundPlayingSound = loadSound('assets/sound/round_playing.mp3', () => {
+        roundPlayingSound.setVolume(0.5);
+      });
+    }
     // 속도 관련 (라운드2 전용)
     this.speed = ROUND2_BASE_SPEED;
 
@@ -122,6 +130,13 @@ if (round2Scripts &&
     this.round2Result = null;
     this.isTargetArrowHovered = false;
     this.targetArrowRect = { x: 0, y: 0, w: 0, h: 0 };
+    // stage2 진입 시 사운드 재생
+    this.stage = 2;
+    this.stage2StartTime = millis();
+    // 게임 플레이 음악 시작
+    if (roundPlayingSound && !roundPlayingSound.isPlaying()) {
+      roundPlayingSound.loop();
+    }
   }
 
   setup() {
@@ -157,6 +172,10 @@ if (round2Scripts &&
     this.y = backgr ? backgr.height - 80 : groundY;
     //this.environment.display(false, 2);
 
+    // stage2에서 음악이 안 나오면 보장
+    if (this.stage === 2 && roundPlayingSound && !roundPlayingSound.isPlaying()) {
+      roundPlayingSound.loop();
+    }
 
     // 플레이어 이동
     this.handleMovement();
