@@ -1,8 +1,8 @@
 // screens/stopScreen.js
-// STOP SCREEN: black bg + 2 centered buttons + hover swap
+// STOP SCREEN: semi-transparent overlay + 2 centered buttons
 // Click:
-//  - Continue: resumeToPreviousScreen()  (setup 없이 복귀 → 진행 유지)
-//  - Quit:     startScreen으로
+//  - Continue: resumeToPreviousScreen()
+//  - Quit: startScreen
 
 const STOP_W = 1024;
 const STOP_H = 869;
@@ -39,6 +39,9 @@ const GAP = 18;
 const MAX_TOTAL_W_RATIO = 0.985;
 const MAX_BTN_H_RATIO   = 0.36;
 
+// ✅ 반투명 어둠 정도 (0~255)
+const DIM_ALPHA = 160;
+
 const CONTINUE_HOVER_SCALE = 1.0;
 const CONTINUE_HOVER_VISUAL_ZOOM = 1.24;
 const QUIT_HOVER_ZOOM = 1.0;
@@ -47,10 +50,25 @@ function stopScreenPreload() {}
 
 function stopScreenSetup() {
   createCanvas(STOP_W, STOP_H);
+  // ❗ 여기서는 get() 하지 않음 (이미 router에서 캡처됨)
 }
 
 function stopScreenDraw() {
-  background(0);
+  // =========================
+  // 1) 캡처된 게임 화면 먼저 그리기
+  // =========================
+  if (typeof stopScreenBackdrop !== "undefined" && stopScreenBackdrop) {
+    image(stopScreenBackdrop, 0, 0, width, height);
+  } else {
+    background(0);
+  }
+
+  // =========================
+  // 2) 반투명 오버레이
+  // =========================
+  noStroke();
+  fill(0, DIM_ALPHA);
+  rect(0, 0, width, height);
 
   ensureStopButtonsLoaded();
 
@@ -68,6 +86,10 @@ function stopScreenDraw() {
   const hoverContinue = isHover(btnContinue);
   const hoverQuit = isHover(btnQuit);
 
+  // =========================
+  // 3) 버튼 렌더
+  // =========================
+
   // 계속하기
   if (hoverContinue && imgContinueHover) {
     const dw = btnContinue.w * CONTINUE_HOVER_SCALE;
@@ -75,7 +97,11 @@ function stopScreenDraw() {
     const dx = btnContinue.x + (btnContinue.w - dw) / 2;
     const dy = btnContinue.y + (btnContinue.h - dh) / 2;
 
-    drawImageContainClipped(imgContinueHover, dx, dy, dw, dh, CONTINUE_HOVER_VISUAL_ZOOM);
+    drawImageContainClipped(
+      imgContinueHover,
+      dx, dy, dw, dh,
+      CONTINUE_HOVER_VISUAL_ZOOM
+    );
   } else {
     image(imgContinue, btnContinue.x, btnContinue.y, btnContinue.w, btnContinue.h);
   }
@@ -95,33 +121,39 @@ function stopScreenDraw() {
   cursor(hoverContinue || hoverQuit ? HAND : ARROW);
 }
 
-// ✅ 너 라우터(mousePressed)에서 자동 호출됨
+// =========================
+// Mouse
+// =========================
 function stopScreenMousePressed() {
   if (!stopLoad.done || stopLoad.failed) return;
   if (btnContinue.w === 0 || btnQuit.w === 0) layoutStopButtons();
 
+  // 계속하기 → 원래 화면 복귀
   if (isHover(btnContinue)) {
-    // ✅✅ 핵심: setup 없이 복귀 → "누른 순간 위치" 그대로
     if (typeof resumeToPreviousScreen === "function") {
       resumeToPreviousScreen();
     } else if (typeof switchToGameScreen === "function") {
-      // fallback (이건 setup 실행되므로 위치 리셋 가능)
       switchToGameScreen();
     }
     return;
   }
 
-  if (isHover(btnQuit)) {
-    // startScreen으로
-    if (typeof clearResumeTarget === "function") clearResumeTarget();
-
-    applyScreen("startScreen");
-    if (typeof setup === "function") setup();
-    return;
+  // 종료하기 → startScreen
+ if (isHover(btnQuit)) {
+  // ✅ 게임 상태 완전 초기화
+  if (typeof resetGameState === "function") {
+    resetGameState();
   }
+
+  applyScreen("startScreen");
+  if (typeof setup === "function") setup();
+  return;
+}
 }
 
-// -------------------- Loading
+// =========================
+// Loading helpers
+// =========================
 function ensureStopButtonsLoaded() {
   if (stopLoad.started) return;
   stopLoad.started = true;
@@ -137,10 +169,26 @@ function ensureStopButtonsLoaded() {
     }
   }
 
-  loadWithBases(FILES.continue, (img, log) => { imgContinue = img; stopLoad.logs.push(`continue: ${log}`); doneOne(); });
-  loadWithBases(FILES.continueHover, (img, log) => { imgContinueHover = img; stopLoad.logs.push(`continueHover: ${log}`); doneOne(); });
-  loadWithBases(FILES.quit, (img, log) => { imgQuit = img; stopLoad.logs.push(`quit: ${log}`); doneOne(); });
-  loadWithBases(FILES.quitHover, (img, log) => { imgQuitHover = img; stopLoad.logs.push(`quitHover: ${log}`); doneOne(); });
+  loadWithBases(FILES.continue, (img, log) => {
+    imgContinue = img;
+    stopLoad.logs.push(`continue: ${log}`);
+    doneOne();
+  });
+  loadWithBases(FILES.continueHover, (img, log) => {
+    imgContinueHover = img;
+    stopLoad.logs.push(`continueHover: ${log}`);
+    doneOne();
+  });
+  loadWithBases(FILES.quit, (img, log) => {
+    imgQuit = img;
+    stopLoad.logs.push(`quit: ${log}`);
+    doneOne();
+  });
+  loadWithBases(FILES.quitHover, (img, log) => {
+    imgQuitHover = img;
+    stopLoad.logs.push(`quitHover: ${log}`);
+    doneOne();
+  });
 }
 
 function loadWithBases(filename, onDone) {
@@ -151,12 +199,18 @@ function loadWithBases(filename, onDone) {
       return;
     }
     const path = BASE_PATHS[idx++] + filename;
-    loadImage(path, (img) => onDone(img, `OK -> ${path}`), () => tryNext());
+    loadImage(
+      path,
+      img => onDone(img, `OK -> ${path}`),
+      () => tryNext()
+    );
   }
   tryNext();
 }
 
-// -------------------- Layout
+// =========================
+// Layout
+// =========================
 function layoutStopButtons() {
   if (!imgContinue || !imgQuit) return;
 
@@ -171,8 +225,10 @@ function layoutStopButtons() {
 
   const s = min(sByW, sByH, 1);
 
-  btnContinue.w = cW0 * s; btnContinue.h = cH0 * s;
-  btnQuit.w = qW0 * s;     btnQuit.h = qH0 * s;
+  btnContinue.w = cW0 * s;
+  btnContinue.h = cH0 * s;
+  btnQuit.w     = qW0 * s;
+  btnQuit.h     = qH0 * s;
 
   const totalW = btnContinue.w + GAP + btnQuit.w;
   const startX = (width - totalW) / 2;
@@ -180,22 +236,25 @@ function layoutStopButtons() {
 
   btnContinue.x = startX;
   btnContinue.y = centerY - btnContinue.h / 2;
-
   btnQuit.x = startX + btnContinue.w + GAP;
   btnQuit.y = centerY - btnQuit.h / 2;
 }
 
-// -------------------- Draw helpers
+// =========================
+// Draw utils
+// =========================
 function drawImageContainClipped(img, dx, dy, dw, dh, zoom = 1.0) {
   const imgAspect = img.width / img.height;
   const boxAspect = dw / dh;
 
   let w, h;
-  if (imgAspect > boxAspect) { w = dw; h = dw / imgAspect; }
-  else { h = dh; w = dh * imgAspect; }
+  if (imgAspect > boxAspect) {
+    w = dw; h = dw / imgAspect;
+  } else {
+    h = dh; w = dh * imgAspect;
+  }
 
   w *= zoom; h *= zoom;
-
   const x = dx + (dw - w) / 2;
   const y = dy + (dh - h) / 2;
 
@@ -209,35 +268,49 @@ function drawImageContainClipped(img, dx, dy, dw, dh, zoom = 1.0) {
   pop();
 }
 
-function drawImageCoverCropToAspectWithZoom(img, dx, dy, dw, dh, targetAspect, zoom = 1.0) {
+function drawImageCoverCropToAspectWithZoom(
+  img, dx, dy, dw, dh, targetAspect, zoom = 1.0
+) {
   const srcW = img.width, srcH = img.height;
   const srcAspect = srcW / srcH;
 
   let sx = 0, sy = 0, sw = srcW, sh = srcH;
 
-  if (srcAspect > targetAspect) { sw = srcH * targetAspect; sx = (srcW - sw) / 2; }
-  else if (srcAspect < targetAspect) { sh = srcW / targetAspect; sy = (srcH - sh) / 2; }
+  if (srcAspect > targetAspect) {
+    sw = srcH * targetAspect;
+    sx = (srcW - sw) / 2;
+  } else if (srcAspect < targetAspect) {
+    sh = srcW / targetAspect;
+    sy = (srcH - sh) / 2;
+  }
 
-  if (zoom && zoom > 1.0) {
-    const sw2 = sw / zoom, sh2 = sh / zoom;
-    sx += (sw - sw2) / 2; sy += (sh - sh2) / 2;
+  if (zoom > 1.0) {
+    const sw2 = sw / zoom;
+    const sh2 = sh / zoom;
+    sx += (sw - sw2) / 2;
+    sy += (sh - sh2) / 2;
     sw = sw2; sh = sh2;
   }
+
   image(img, dx, dy, dw, dh, sx, sy, sw, sh);
 }
 
-// -------------------- Helpers
+// =========================
+// Misc
+// =========================
 function isHover(btn) {
   return mouseX >= btn.x && mouseX <= btn.x + btn.w &&
          mouseY >= btn.y && mouseY <= btn.y + btn.h;
 }
 
 function drawStopLoading() {
-  fill(255); textSize(20);
+  fill(255);
+  textSize(20);
   text("STOP SCREEN: loading...", 30, 30);
 }
 
 function drawStopError() {
-  fill(255); textSize(18);
+  fill(255);
+  textSize(18);
   text("STOP SCREEN: load FAILED", 30, 30);
 }
