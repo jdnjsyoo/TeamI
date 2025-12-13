@@ -44,7 +44,4 @@ function gameScreenPreload() {
   // Timer images
   timeBarBase = loadImage('assets/time/time0.png');
   timeBar = loadImage('assets/time/time100.png');
-
-
-  
 }
