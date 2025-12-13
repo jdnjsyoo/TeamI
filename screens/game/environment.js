@@ -13,7 +13,7 @@ class Environment {
       stage2YShift = -220; // 위로 100px 이동
     }
 
-    if (this.cityImg && !isStationImgActive) {
+    if (this.cityImg) {
       let sScale = 0.55;
       let yPos = outsideYOffset + stage2YShift;
       
@@ -29,7 +29,7 @@ class Environment {
       }
     }
 
-    if (this.cloudImg && !isStationImgActive) {
+    if (this.cloudImg) {
       let cScale = 0.6;
       let cw = this.cloudImg.width * cScale;
       let ch = this.cloudImg.height * cScale;
@@ -41,15 +41,6 @@ class Environment {
       for (let xx = cloudX; xx < maxX; xx += cw) {
         image(this.cloudImg, xx, -40 + outsideYOffset + stage2YShift, cw, ch);
       }
-    }
-
-    if (isStationImgActive && this.stationImg) {
-      let sw = 1024; // 고정된 가로 사이즈
-      let sScale = sw / this.stationImg.width; // 비율 유지
-      let sh = this.stationImg.height * sScale; // 세로 사이즈 계산
-      let fixedX = (width - sw) / 2; // 고정된 x좌표 계산
-      let fixedY = height - sh - 115; // 바닥에서 115px 띄우기
-      image(this.stationImg, fixedX, fixedY, sw, sh);
     }
   }
 }

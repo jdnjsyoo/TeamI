@@ -33,6 +33,12 @@ function handleNpcBehavior(round, worldGroundY, scrollX, stageScale) {
         millis() - round.npcWalkStartTime >= 1000 &&
         !round.npcHasLeftScreen
     ) {
+        if (!round.npcIsActuallyWalking) {
+            round.npcIsActuallyWalking = true;
+            if (round.playerShouldSit) {
+                round.playerMoveStartTime = millis() + 3000;
+            }
+        }
         round.npcPositions[npcIndex].x -= npc2WalkSpeed;
     }
 
@@ -52,11 +58,6 @@ function handleNpcBehavior(round, worldGroundY, scrollX, stageScale) {
 
         if (rightScreenX < 0) {
             round.npcHasLeftScreen = true;
-            
-            // 플레이어가 앉아야 하는 경우, 자동 이동 시작
-            if (round.playerShouldSit) {
-                round.isPlayerAutoMovingToSeat = true;
-            }
         }
     }
 }

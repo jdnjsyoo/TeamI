@@ -1,37 +1,29 @@
 function handlePlayerMovement(round) {
-  // ⭐ 좌석 앞으로 자동 이동 중일 때: (지금은 플래그가 안 켜져서 실행 안 됨)
-  if (round.isPlayerAutoMovingToSeat && round.playerTargetX !== null) {
-    const autoSpeed = 4;
-    if (Math.abs(round.x - round.playerTargetX) <= autoSpeed) {
-      round.x = round.playerTargetX;
-      round.isPlayerAutoMovingToSeat = false;
-      round.playerDir = "sit";  // 도착 후 착석
-    } else {
-      let dir = (round.playerTargetX > round.x) ? 1 : -1;
-      round.x += dir * autoSpeed;
-      round.playerDir = dir === 1 ? "right" : "left";
-    }
-    return;
-  }
+  // ⭐ success 결과 시 2초 후 착석 처리
+  // 외부에서 round.result가 'success'가 되고, 정답 NPC가 일어난 후 2초가 지나면 round.playerDir = 'sit', round.playerShouldSit = true, round.targetSeatX = (정답 좌석 x)로 설정 필요
 
-  if (round.stage !== 1) { // Stage 1이 아닐 때만 좌우 이동 허용
-    if (keyIsDown(LEFT_ARROW)) {
-      round.x -= speed;
-      round.playerDir = "left";
+  // 결과가 정해지면 수동 이동 중지
+  // playerDir이 'sit'이면 수동 이동 및 방향 변경 불가
+  if (round.resultOverlayType === null && round.playerDir !== "sit") {
+    if (round.stage !== 1) { // Stage 1이 아닐 때만 좌우 이동 허용
+      if (keyIsDown(LEFT_ARROW)) {
+        round.x -= speed;
+        round.playerDir = "left";
+      }
+      // → 오른쪽
+      else if (keyIsDown(RIGHT_ARROW)) {
+        round.x += speed;
+        round.playerDir = "right";
+      }
     }
-    // → 오른쪽
-    else if (keyIsDown(RIGHT_ARROW)) {
-      round.x += speed;
-      round.playerDir = "right";
+    // ↑ 정면
+    if (keyIsDown(UP_ARROW)) {
+      round.playerDir = "front";
     }
-  }
-  // ↑ 정면
-  if (keyIsDown(UP_ARROW)) {
-    round.playerDir = "front";
-  }
-  // ↓ 뒷모습
-  else if (keyIsDown(DOWN_ARROW)) {
-    round.playerDir = "back";
+    // ↓ 뒷모습
+    else if (keyIsDown(DOWN_ARROW)) {
+      round.playerDir = "back";
+    }
   }
 }
 
