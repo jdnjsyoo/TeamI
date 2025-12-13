@@ -228,7 +228,26 @@ class Round1 {
       let offsetX = width / 4 + 20;
       let offsetY = height / 4 + 20;
 
-      let scrollX = (this.stage === 2) ? -this.x + offsetX : -0 + offsetX;
+      const camPad = 50;
+      const viewW = width / stageScale;
+
+      let scrollX;
+      if (this.stage === 2) {
+      const playerCenterX = this.x + playerScale / 2;
+
+     // ✅ 플레이어 중심을 화면 "중앙"에 두도록 카메라 즉시 추적
+     scrollX = -playerCenterX + viewW / 2;
+
+     // ✅ camPad 반영!
+     scrollX = constrain(scrollX, -backgr.width + viewW + camPad, camPad);
+
+      } else {
+     scrollX = offsetX; // (=0+offsetX)
+     scrollX = constrain(scrollX, -backgr.width + viewW + camPad, camPad);
+     }
+
+
+      
       let scrollY = -this.y + offsetY;
 
       scrollX = constrain(scrollX, -backgr.width + width / stageScale, 0);

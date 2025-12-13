@@ -34,6 +34,9 @@ function loadRound2Assets() {
 // =======================
 class Round2 {
   constructor() {
+    // 🔥 잔상 트레일
+    this.trail = [];
+    
     // Player state
     this.x = startX - 400;                        // 좌석 왼쪽에서 시작
     this.y = backgr ? backgr.height - 80 : groundY;
@@ -152,11 +155,28 @@ if (round2Scripts &&
     // handleNpcBehavior(this, ...)  // 라운드2에서는 자리양보 연출 없음
 
     this.y = backgr ? backgr.height - 80 : groundY;
-    this.environment.display(false, 2);
+    //this.environment.display(false, 2);
 
 
     // 플레이어 이동
     this.handleMovement();
+    // =======================
+    // 🔥 잔상 기록 (부스트 중에만 쌓이게)
+    // =======================
+    if (this.gameStarted && !this.round2Finished) {
+    if (this.speed > ROUND2_BASE_SPEED) {
+    this.trail.push({
+      x: this.x,
+      y: this.y,
+      dir: this.playerDir,
+      t: millis()
+    });
+  }
+    // 오래된 잔상 제거
+   const TRAIL_LIFE = 220; // ms (늘리면 더 길게 남음)
+   this.trail = this.trail.filter(p => millis() - p.t < TRAIL_LIFE);
+}
+
 
     // 카메라/하이라이트/스케일 계산은 Round1 로직 재활용
     const firstNpcX = startX;
@@ -175,6 +195,45 @@ if (round2Scripts &&
     let playerRightBoundary = backgr.width - 350;
     this.x = constrain(this.x, 0, playerRightBoundary);
 
+    // =======================
+// ✅ 7번 자리 도착 시 자동 성공
+// =======================
+if (!this.round2Finished && this.gameStarted) {
+  const seatX = this.npcPositions[this.targetSeatIndex].x;
+
+  // 좌석 "영역" 기준 판정
+  const seatLeft  = seatX - seatSpacing / 2;
+  const seatRight = seatX + seatSpacing / 2;
+
+  const playerCenterX = this.x + playerScale / 2;
+
+  if (playerCenterX >= seatLeft && playerCenterX <= seatRight) {
+    this.round2Finished = true;
+    this.round2Result = "success";
+
+    // 자리 위치로 스냅 + 앉기
+    this.x = seatX;
+    this.playerDir = "sit";
+
+    this.resultOverlayType = "success";
+    this.resultOverlayStartTime = millis();
+
+    // 성공 스크립트
+    if (
+      round2Scripts &&
+      round2Scripts.round2_success &&
+      typeof ScriptPlayer === "function"
+    ) {
+      this.resultScriptPlayer = new ScriptPlayer(
+        round2Scripts.round2_success
+      );
+    }
+
+    console.log("ROUND 2 SUCCESS: auto-arrived at seat");
+  }
+}
+
+
     const visibleSeats = 4;
     let stageScale = width / (visibleSeats * seatSpacing);
     stageScale *= 0.92;
@@ -183,11 +242,21 @@ if (round2Scripts &&
     let offsetX = width / 4 + 20;
     let offsetY = height / 4 + 20;
 
-    let scrollX = -this.x + offsetX;
-    let scrollY = -this.y + offsetY;
+    const camPad = 50;
+const viewW = width / stageScale;
+const viewH = height / stageScale;
 
-    scrollX = constrain(scrollX, -backgr.width + width / stageScale, 0);
-    scrollY = constrain(scrollY, -backgr.height + height / stageScale, 0);
+// ✅ 플레이어 중심 기준
+const playerCenterX = this.x + playerScale / 2;
+
+let scrollX = -playerCenterX + viewW / 2;
+let scrollY = -this.y + offsetY;
+
+// ✅ 배경 밖 안 보이게
+scrollX = constrain(scrollX, -backgr.width + viewW + camPad, camPad);
+scrollY = constrain(scrollY, -backgr.height + viewH + camPad, camPad);
+
+
 
     let topScreenY = (scrollY - 50) * stageScale;
     let worldShiftY = 0;
@@ -195,13 +264,27 @@ if (round2Scripts &&
       worldShiftY = -topScreenY / stageScale;
     }
 
-    const yOffsetForMouse = 100;
+    const yOffsetForMouse = 45;
     let worldMouseX = (mouseX / stageScale) - (scrollX - 50);
     let worldMouseY = (mouseY / stageScale) - (scrollY - 50 + worldShiftY + yOffsetForMouse);
 
+    // =======================
+// ✅ 창밖 배경(환경) 패럴랙스: 카메라 따라 움직이게
+// =======================
+const camPad2 = 50; // translate에서 쓰는 -50과 같은 값
+const camWorldX = -(scrollX - camPad2);   // 카메라의 월드 X 위치(대략)
+const parallax = 0.25;                  // 0.15~0.35 추천 (작을수록 천천히 흐름)
+
+push();
+resetMatrix();                           // ✅ 스케일/카메라 영향 제거 -> 화면 기준으로 그림
+translate(-camWorldX * parallax * stageScale, 0);  // ✅ 화면 픽셀 단위로 살짝 이동
+this.environment.display(false, 2);      // ✅ 이제 '멈추지 않고' 부드럽게 따라옴
+pop();
+
     push();
+    
     scale(stageScale);
-    const stageYOffset = 100;
+    const stageYOffset = 45;
     translate(scrollX - 50, scrollY - 50 + worldShiftY + stageYOffset);
 
     // 배경 다시 (카메라 기준)
@@ -210,8 +293,35 @@ if (round2Scripts &&
     // NPC 그리기 (7번 자리 NPC는 drawNpcs 쪽에서 빼줄 거)
     const npcBottomY = drawNpcs(this, worldMouseX, worldMouseY);
 
-    // 7번 자리 위 화살표
-    this.drawArrow(worldMouseX, worldMouseY, npcBottomY);
+   // 7번 자리 위 화살표 (성공 전까지만)
+   if (!this.round2Finished) {
+   this.drawArrow(worldMouseX, worldMouseY, npcBottomY);
+}
+
+
+    // =======================
+// 🔥 잔상 먼저 그리기
+// =======================
+const savedX = this.x;
+const savedDir = this.playerDir;
+
+for (let i = 0; i < this.trail.length; i++) {
+  const p = this.trail[i];
+  const age = millis() - p.t;      // 0 ~ TRAIL_LIFE
+  const alpha = map(age, 0, 220, 120, 0); // 처음 진하고 점점 사라짐
+
+  this.x = p.x;
+  this.playerDir = p.dir;
+
+  push();
+  tint(255, alpha);
+  drawPlayer(this, npcBottomY);
+  pop();
+}
+
+this.x = savedX;
+this.playerDir = savedDir;
+
 
     // 플레이어
     drawPlayer(this, npcBottomY);
@@ -292,66 +402,77 @@ if (round2Scripts &&
     }
   }
 
-  // ==============
-  // 화살표 그리기
-  // ==============
-  drawArrow(worldMouseX, worldMouseY, npcBottomWorldY) {
-    if (!sitArrowImg) return;
+///// 화살표 그리기
 
-    const seatX = this.npcPositions[this.targetSeatIndex].x;
-    const seatY = npcBottomWorldY;
+  drawArrow(worldMouseX, worldMouseY , npcBottomWorldY) {
+  if (!sitArrowImg) return;
 
-    const desiredWidth = 350;
-    const scale = desiredWidth / sitArrowImg.width;
-    const w = sitArrowImg.width * scale;
-    const h = sitArrowImg.height * scale;
+  const seatX = this.npcPositions[this.targetSeatIndex].x;
+  const seatY = npcBottomWorldY;
 
-    const drawX = seatX - w / 2;
-    const drawY = seatY - h - 150; // 위로 띄우기
+  // 기본 크기
+  const desiredWidth = 350;
+  const s = desiredWidth / sitArrowImg.width;
+  const w = sitArrowImg.width * s;
+  const h = sitArrowImg.height * s;
 
-    // Hover 감지
+  // ✅ 먼저 기본값 선언
+  let finalW = w;
+  let finalH = h;
+
+  // 🔥 기본 펄스 (hover 없어도 강조)
+  const pulse = 1 + 0.06 * Math.sin(millis() / 120); // 1.0 ~ 1.06
+  finalW *= pulse;
+  finalH *= pulse;
+
+  let finalX = seatX - finalW / 2;
+  let finalY = seatY - finalH - 150;
+
+  // Hover 감지 (final 좌표 기준으로 해야 펄스/확대에도 정확)
   const isHovered =
-    worldMouseX >= drawX+120 && worldMouseX <= drawX + w -120 &&
-    worldMouseY >= drawY && worldMouseY <= drawY + h;
+    worldMouseX >= finalX + 120 && worldMouseX <= finalX + finalW - 120 &&
+    worldMouseY >= finalY && worldMouseY <= finalY + finalH;
 
   this.isTargetArrowHovered = isHovered;
 
-  // 🔥 Hover 효과: 1.1배 확대
-  let finalW = w;
-  let finalH = h;
-  let finalX = drawX;
-  let finalY = drawY;
+ 
+  // 🔥 글로우 먼저
+  push();
+  tint(255, 140);
+  image(sitArrowImg, finalX - 6, finalY - 6, finalW + 12, finalH + 12);
+  pop();
 
-  if (isHovered) {
-    finalW = w * 1.1;
-    finalH = h * 1.1;
-    finalX = seatX - finalW / 2;
-    finalY = seatY - finalH - 150;
-  }
+  
+}
 
-  // 🔥 Hover 효과: 밝기 강조 (tint)
-  if (isHovered) {
-    push();
-    tint(255, 230); // 약간 밝아짐
-    image(sitArrowImg, finalX, finalY, finalW, finalH);
-    pop();
-  } else {
-    image(sitArrowImg, finalX, finalY, finalW, finalH);
-  }
-
-  // 클릭 판정을 위해 rect 저장
-  this.targetArrowRect = {
-    x: finalX,
-    y: finalY,
-    w: finalW,
-    h: finalH,
-  };
-  }
 
   // ==============
   // 키 입력
   // ==============
   keyPressed() {
+
+// 🔥 S키 연타 부스터 (완전 누적형)
+if (key === 's' || key === 'S') {
+  if (!this.round2Finished && this.gameStarted) {
+
+    this.speed += ROUND2_BOOST_AMOUNT;
+
+    if (this.speed > ROUND2_MAX_SPEED) {
+      this.speed = ROUND2_MAX_SPEED;
+    }
+
+    setTimeout(() => {
+      this.speed -= ROUND2_BOOST_AMOUNT;
+      if (this.speed < ROUND2_BASE_SPEED) {
+        this.speed = ROUND2_BASE_SPEED;
+      }
+    }, 400); // ← 예전 클릭 부스터랑 동일 타이밍
+  }
+  return false;
+}
+
+
+
     // ✅ 바로 3라운드 넘어가는 L 치트키 (디버그용)
     if (key === 'l' || key === 'L') {
         if (typeof switchToRound3 === "function") {
@@ -444,59 +565,15 @@ if (round2Scripts &&
       return;
     }
 
-    // --- 7번자리 화살표 클릭 → 성공 ---
-    if (this.isTargetArrowHovered && !this.round2Finished) {
-      const seatX = this.npcPositions[this.targetSeatIndex].x;
-
-      this.round2Finished = true;
-      this.round2Result = "success";
-
-      const millgi = 0; // 살짝 왼쪽으로
-      this.x = seatX - millgi;
-
-      this.isPlayerAutoMovingToSeat = false;
-      this.playerTargetX = null;
-      this.playerDir = "sit";
-
-      this.resultOverlayType = "success";
-      this.resultOverlayStartTime = millis();
-
-      // 🔥 성공 스크립트 시작
-    if (round2Scripts && round2Scripts.round2_success && typeof ScriptPlayer === "function") {
-    this.resultScriptPlayer = new ScriptPlayer(round2Scripts.round2_success);
+   
   }
 
-  console.log("ROUND 2 SUCCESS: clicked arrow!");
-  return;
-
-
-
-    }
-
-    // --- 화살표가 아닌 곳 클릭 → 속도 증가 ---
-    this.boostSpeed();
-  }
-
-  // ==============
-  // 속도 부스트
-  // ==============
-  boostSpeed() {
-    if (this.round2Finished) return;
-
-    this.speed += ROUND2_BOOST_AMOUNT;
-    if (this.speed > ROUND2_MAX_SPEED) this.speed = ROUND2_MAX_SPEED;
-
-    setTimeout(() => {
-      this.speed -= ROUND2_BOOST_AMOUNT;
-      if (this.speed < ROUND2_BASE_SPEED) this.speed = ROUND2_BASE_SPEED;
-    }, 400);
-  }
 }
 
 // Round2용 속도 상수 (전역에 한 번만 선언)
 const ROUND2_BASE_SPEED   = 0.1;
 const ROUND2_BOOST_AMOUNT = 1 ;
-const ROUND2_MAX_SPEED    = 8;
+const ROUND2_MAX_SPEED    = 10;
 
 const ROUND2_TIME_LIMIT   = 8000;
 
