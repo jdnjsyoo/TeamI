@@ -27,7 +27,10 @@ class ScriptPlayer {
             this.typingIndex++;
             this.displayedText = currentLine.substring(0, this.typingIndex);
           } else {
-            // 현재 줄 타이핑 완료
+            // 현재 줄 타이핑 완료, 사운드 중지
+            if (typingSound && typingSound.isLoaded()) {
+              typingSound.stop();
+            }
             this.state = 'waiting';
             this.lineWaitStartTime = millis();
           }
@@ -39,13 +42,19 @@ class ScriptPlayer {
   // 다음으로 넘기기 (스페이스바)
   next() {
     if (this.state === 'typing') {
-      // 타이핑 중이면 즉시 전체 줄 표시
+      // 타이핑 중이면 즉시 전체 줄 표시, 사운드 중지
+      if (typingSound && typingSound.isLoaded()) {
+        typingSound.stop();
+      }
       this.displayedText = this.lines[this.currentLineIndex];
       this.typingIndex = this.lines[this.currentLineIndex].length;
       this.state = 'waiting';
       this.lineWaitStartTime = millis();
     } else if (this.state === 'waiting') {
-      // 다음 줄로 이동 (자동 넘김을 기다리지 않거나, 마지막 줄을 넘길 때)
+      // 다음 줄로 이동 전, 현재 사운드 중지
+      if (typingSound && typingSound.isLoaded()) {
+        typingSound.stop();
+      }
       this.currentLineIndex++;
       if (this.currentLineIndex >= this.lines.length) {
         // 모든 스크립트 종료
@@ -54,7 +63,10 @@ class ScriptPlayer {
           this.onFinished();
         }
       } else {
-        // 다음 줄 타이핑 시작
+        // 다음 줄 타이핑 시작, 사운드 재생
+        if (typingSound && typingSound.isLoaded()) {
+          typingSound.loop();
+        }
         this.typingIndex = 0;
         this.displayedText = '';
         this.state = 'typing';
