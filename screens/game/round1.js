@@ -148,7 +148,7 @@ class Round1 {
     this.introState = 'playing'; // 시작하자마자 재생
 
     // 인트로 시작 시 배경 음악 재생
-    if (scriptBgSound && !scriptBgSound.isPlaying()) {
+      if (scriptBgSound && scriptBgSound.isLoaded() && !scriptBgSound.isPlaying()) {
         scriptBgSound.loop();
     }
 
@@ -202,11 +202,11 @@ class Round1 {
       this.timerWidth = timeBar.width;
     }
     // 인트로 음악이 재생 중이었다면 중지
-    if (scriptBgSound && scriptBgSound.isPlaying()) {
+      if (scriptBgSound && scriptBgSound.isLoaded() && scriptBgSound.isPlaying()) {
         scriptBgSound.stop();
     }
     // 게임 플레이 음악 시작
-    if (roundPlayingSound && !roundPlayingSound.isPlaying()) {
+      if (roundPlayingSound && roundPlayingSound.isLoaded() && !roundPlayingSound.isPlaying()) {
         roundPlayingSound.loop();
     }
   }
@@ -333,11 +333,13 @@ class Round1 {
         this.selectedNpcIndex = this.highlightedNpcIndex;
         this.stage2StartTime = null;
         // Stage 2 타이머가 끝나서 Stage 1으로 돌아올 때 음악 변경
-        if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+          if (roundPlayingSound && roundPlayingSound.isLoaded() && roundPlayingSound.isPlaying()) {
             roundPlayingSound.stop();
         }
         if (scriptBgSound && !scriptBgSound.isPlaying()) {
-            scriptBgSound.loop();
+            if (scriptBgSound.isLoaded()) {
+              scriptBgSound.loop();
+            }
         }
       }
     }
@@ -377,13 +379,11 @@ class Round1 {
         // resultScriptPlayer가 끝난 후에만 round2로 넘어감
         if (typeof switchToRound2 === "function") {
           switchToRound2();
-          // Round 2로 넘어갈 때 게임 플레이 음악 중지
-          if (roundPlayingSound && roundPlayingSound.isPlaying()) {
-            roundPlayingSound.stop();
-          }
         }
         console.log("Switching to Round 2!");
+        return true; // round2로 넘어갔으니 true 반환
       }
+      // n키가 아니면 false 반환
       return false;
     }
 

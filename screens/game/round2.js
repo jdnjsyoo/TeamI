@@ -132,7 +132,7 @@ if (round2Scripts &&
     this.stage = 2;
     this.stage2StartTime = millis();
     // 게임 플레이 음악 시작
-    if (roundPlayingSound && !roundPlayingSound.isPlaying()) {
+      if (roundPlayingSound && roundPlayingSound.isLoaded() && !roundPlayingSound.isPlaying()) {
       roundPlayingSound.loop();
     }
   }
@@ -171,7 +171,7 @@ if (round2Scripts &&
     //this.environment.display(false, 2);
 
     // stage2에서 음악이 안 나오면 보장
-    if (this.stage === 2 && roundPlayingSound && !roundPlayingSound.isPlaying()) {
+      if (this.stage === 2 && roundPlayingSound && roundPlayingSound.isLoaded() && !roundPlayingSound.isPlaying()) {
       roundPlayingSound.loop();
     }
 

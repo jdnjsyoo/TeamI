@@ -109,7 +109,6 @@ function drawNPC(round, npcImg, baseX, baseY, index, isHighlighted, worldMouseX,
     let scaleFactor = targetHeight / npcImg.height;
     let w = npcImg.width * scaleFactor;
     let h = targetHeight;
-
     let drawX = baseX - w / 2;
     let drawY = baseY - h;
 

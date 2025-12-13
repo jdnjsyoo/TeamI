@@ -17,6 +17,9 @@ function switchToRound2() {
   round2_instance.setup();
 
   currentRound = 2;
+  if (typeof applyScreen === "function") {
+    applyScreen("gameScreen");
+  }
 }
 
 // Round3로 넘어갈 때 호출할 헬퍼 (Round2에서 부름)
@@ -33,14 +36,15 @@ function switchToRound3() {
   currentRound = 3;
 }
 
-
-
 // gameScreenPreload 함수는 screens/game/assets.js 파일에 있습니다.
 
 function gameScreenSetup() {
   createCanvas(1024, 869);
-  round1_instance = new Round1();
-  round1_instance.setup();
+  if (currentRound === 1 && !round1_instance) {
+    round1_instance = new Round1();
+    round1_instance.setup();
+  }
+  // round2, round3는 switchToRound2/3에서 인스턴스 생성 및 setup 호출
 }
 
 function gameScreenDraw() {

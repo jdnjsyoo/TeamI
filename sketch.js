@@ -34,7 +34,6 @@ function applyScreen(prefix) {
 
 function switchToGameScreen() {
   applyScreen("gameScreen");
-  // ❗ setup 실행 → 게임 완전 새로 시작
   if (typeof setup === "function") {
     setup();
   }
@@ -99,6 +98,7 @@ function mousePressed() {
 }
 
 function keyPressed() {
+  if (window.event) window.event.preventDefault();
   const fn = window[`${currentScreenPrefix}KeyPressed`];
   if (typeof fn === "function") fn();
 }
