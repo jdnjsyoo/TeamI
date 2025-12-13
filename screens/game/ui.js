@@ -138,35 +138,26 @@ function drawUi(instance) {
     let buttonX = width - buttonWidth - 10; // 오른쪽 여백 10px
     const buttonY = 20; // 위쪽 여백 20px
 
-    if (stopButton) {
-        image(stopButton, buttonX, buttonY, buttonWidth, buttonHeight);
-        // stop 버튼 히트박스 저장
-        stopBtnX = buttonX;
-        stopBtnY = buttonY;
-        stopBtnW = buttonWidth;
-        stopBtnH = buttonHeight;
-
-        buttonX -= buttonWidth / 2 + buttonGap;
-    }
-
-    if (quitButton) {
-        image(quitButton, buttonX, buttonY, buttonWidth, buttonHeight);
-        // quit 버튼 히트박스 저장
-        quitBtnX = buttonX;
-        quitBtnY = buttonY;
-        quitBtnW = buttonWidth;
-        quitBtnH = buttonHeight;
-
-        buttonX -= buttonWidth / 2 + buttonGap;
-    }
-
+    // settingButton 먼저
     if (settingButton) {
-        image(settingButton, buttonX, buttonY, buttonWidth, buttonHeight);
-        // setting 버튼 히트박스 저장
-        settingBtnX = buttonX;
-        settingBtnY = buttonY;
-        settingBtnW = buttonWidth;
-        settingBtnH = buttonHeight;
+      image(settingButton, buttonX, buttonY, buttonWidth, buttonHeight);
+      // setting 버튼 히트박스 저장
+      settingBtnX = buttonX;
+      settingBtnY = buttonY;
+      settingBtnW = buttonWidth;
+      settingBtnH = buttonHeight;
+
+      buttonX -= buttonWidth / 2 + buttonGap;
+    }
+
+    // stopButton 나중
+    if (stopButton) {
+      image(stopButton, buttonX, buttonY, buttonWidth, buttonHeight);
+      // stop 버튼 히트박스 저장
+      stopBtnX = buttonX;
+      stopBtnY = buttonY;
+      stopBtnW = buttonWidth;
+      stopBtnH = buttonHeight;
     }
     pop();
 

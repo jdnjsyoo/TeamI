@@ -31,7 +31,6 @@ function gameScreenPreload() {
 
   // 버튼 이미지 로드
   stopButton = loadImage('assets/buttons/stop_투명.png');
-  quitButton = loadImage('assets/buttons/quit_투명.png');
   settingButton = loadImage('assets/buttons/setting_투명.png');
   gameScore = loadImage('assets/result/score.png');
   sitHereImg = loadImage('assets/buttons/sit_here.png');

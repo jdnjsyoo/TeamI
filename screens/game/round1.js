@@ -10,7 +10,7 @@ const npcData = {
     "홍대": [{ spec: "애니", frames: 3 }, { spec: "탈색", frames: 3 }]
 };
 
-const stage2DurationRound1 = 20000; // 라운드 1의 stage 2 지속 시간: 20초
+const stage2DurationRound1 = 30000; // 라운드 1의 stage 2 지속 시간: 30초
 
 // Fisher-Yates shuffle to randomize array in place
 function shuffle(array) {
@@ -77,10 +77,6 @@ function preloadRound1Assets() {
 
     console.log("--- preloadRound1Assets executed ---");
 }
-
-
-
-
 
 class Round1 {
   constructor() {
@@ -183,6 +179,7 @@ class Round1 {
   }
 
   draw() {
+    // (3초 대기 없이) 인트로 마지막 줄과 동시에 showPressEnter 표시
     background(0);
 
     // 게임 로직은 gameStarted 플래그로 제어
@@ -411,32 +408,36 @@ class Round1 {
       console.log("--- mousePressed Debug Info (Sit Here Button) ---");
       console.log("Hovered NPC Index:", this.hoveredSitNpcIndex);
       console.log("Correct NPC Index (instance):", this.correctNpcIndex);
-      console.log("Comparison result (hovered === correct):", this.hoveredSitNpcIndex === this.correctNpcIndex);
-
-      if (this.hoveredSitNpcIndex === this.correctNpcIndex) {
-        // --- 정답 ---
-        this.resultOverlayType = 'success';
-        this.resultOverlayStartTime = millis();
-        this.npcStandingIndex = this.correctNpcIndex;
-        this.npcStandTriggerTime = millis();
-        this.playerShouldSit = true;
-        this.targetSeatX = this.npcPositions[this.correctNpcIndex].x;
-        // 성공 스크립트 실행
-        this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {
-          console.log("Success script finished.");
-        });
-        console.log("Decision: SUCCESS");
-      } else {
-        // --- 오답 ---
-        this.resultOverlayType = 'fail';
-        this.resultOverlayStartTime = millis();
-         // 실패 스크립트 실행
-        this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {
-          console.log("Fail script finished.");
-        });
-        console.log("Decision: FAIL");
-      }
-      console.log("-----------------------------------------------");
+              console.log("Comparison result (hovered === correct):", this.hoveredSitNpcIndex === this.correctNpcIndex);
+      
+            if (this.hoveredSitNpcIndex === this.correctNpcIndex) {
+              // --- 정답 ---
+              this.resultOverlayType = 'success';
+              this.resultOverlayStartTime = millis();
+              this.npcStandingIndex = this.correctNpcIndex;
+              this.npcStandTriggerTime = millis();
+              this.playerShouldSit = true;
+              this.targetSeatX = this.npcPositions[this.correctNpcIndex].x;
+              // 성공 스크립트 실행
+              this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {
+                console.log("Success script finished.");
+              });
+              console.log("Decision: SUCCESS");
+            } else {
+              // --- 오답 ---
+              this.resultOverlayType = 'fail';
+              this.resultOverlayStartTime = millis();
+              // 실패 시에도 정답 NPC가 일어나 나가도록 처리
+              this.npcStandingIndex = this.correctNpcIndex;
+              this.npcStandTriggerTime = millis();
+              this.playerShouldSit = true; // 플레이어도 앉도록 처리 (선택한 자리에 앉는 것이 아니라, 맞든 틀리든 앉아서 결과를 기다리는 것으로 해석)
+              this.targetSeatX = this.npcPositions[this.hoveredSitNpcIndex].x; // 오답인 경우, 플레이어는 본인이 선택한 자리에 앉음
+               // 실패 스크립트 실행
+              this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {
+                console.log("Fail script finished.");
+              });
+              console.log("Decision: FAIL");
+            }      console.log("-----------------------------------------------");
       return;
     }
     
