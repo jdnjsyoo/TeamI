@@ -3,9 +3,6 @@ let round1Scripts;
 // 모든 플레이어 캐릭터 에셋을 저장할 배열
 let playerCharacterAssets = [];
 
-// img, imgFront, imgBack, imgSit 변수들은 P5.js 전역 스코프에서 관리되거나 다른 파일에서 선언됨.
-// 여기서는 별도로 let 선언하지 않고 할당만 수행함.
-
 // 선택된 캐릭터의 에셋을 설정하는 함수
 function setPlayerCharacterAssets(index) {
   const assets = playerCharacterAssets[index];
