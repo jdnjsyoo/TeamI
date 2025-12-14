@@ -920,14 +920,5 @@ class Round3 {
 
       return;
     }
-
-    // (기존) 가속 로직
-    speed += boostAmount;
-    if (speed > maxBoost) speed = maxBoost;
-
-    setTimeout(() => {
-      speed -= boostAmount;
-      if (speed < baseSpeed) speed = baseSpeed;
-    }, 1000);
   }
 }

@@ -3,36 +3,34 @@ let roundPlayingSound;
 
 // 모든 역의 NPC 정보를 담는 객체
 const npcData = {
-    "강남": [{ spec: "직장인", frames: 2 }, { spec: "화장", frames: 2 }],
+    "강남": [{ spec: "명품", frames: 2 }, { spec: "직장인", frames: 2 }, { spec: "화장", frames: 2 }],
     "강변": [{ spec: "군인", frames: 2 }, { spec: "백팩", frames: 2 }, { spec: "캐리어", frames: 3 }],
     "서울대입구": [{ spec: "잠", frames: 2 }, { spec: "책", frames: 2 }],
     "성수": [{ spec: "쇼핑백", frames: 2 }, { spec: "폰", frames: 2 }],
     "시청": [{ spec: "서류", frames: 3 }, { spec: "집회", frames: 2 }],
     "을지로": [{ spec: "외국인", frames: 2 }, { spec: "힙합", frames: 3 }],
     "잠실": [{ spec: "코트", frames: 2 }, { spec: "학생", frames: 2 }],
-    "홍대": [{ spec: "애니", frames: 3 }, { spec: "탈색", frames: 3 }]
+    "홍대": [{ spec: "보드", frames: 2 }, { spec: "애니", frames: 3 }, { spec: "탈색", frames: 3 }]
 };
 
 const stage2DurationRound1 = 30000; // 라운드 1의 stage 2 지속 시간: 30초
 
-// Fisher-Yates shuffle to randomize array in place
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-  }
+// shuffle 함수를 제거하고, preloadRound1Assets 내에 직접 랜덤 로직을 구현합니다.
 
 let correctNpcIndex = -1; // 정답 NPC의 인덱스를 저장할 전역 변수
 let selectedNpcs = []; // 선택된 NPC 정보를 저장할 전역 변수
 
 function preloadRound1Assets() {
-    // 1. 역 선택 로직 (RandomLogic.md 기반으로 수정)
+    // 1. 역 선택: 모든 역 목록을 가져와 내장 로직으로 순서를 섞음
     const allStations = Object.keys(npcData);
-    shuffle(allStations);
-    const roundStations = allStations.slice(0, 7); // 이번 라운드에 사용할 7개의 역
+    const shuffledStations = allStations
+        .map(value => ({ value, sort: random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value);
 
-    // 2. 정답 역(currentStationName) 설정
+    const roundStations = shuffledStations.slice(0, 7); // 이번 라운드에 사용할 7개의 역
+
+    // 2. 정답 역 설정: 선택된 7개 역 중에서 하나를 무작위로 선택
     currentStationName = random(roundStations); 
 
     // 3. 역 관련 에셋 로드
@@ -40,23 +38,27 @@ function preloadRound1Assets() {
     cityImg = loadImage(`assets/scenery/${currentStationName}.png`);
     cloudImg = loadImage('assets/scenery/구름.png');
 
-    // 4. 7명의 NPC 정보 생성
-    selectedNpcs = [];
-    roundStations.forEach(station => {
+    // 4. 7명의 NPC 정보 생성: 각 역에서 한 명씩 NPC를 선택
+    let npcsForRound = roundStations.map(station => {
         const isCorrect = (station === currentStationName);
         const npcPool = npcData[station];
         const npcInfo = random(npcPool);
         
-        selectedNpcs.push({
+        return {
             station: station,
             spec: npcInfo.spec,
             isCorrect: isCorrect,
             frameCount: npcInfo.frames
-        });
+        };
     });
 
-    // 5. 최종 NPC 리스트 랜덤화 (자리 배치)
-    shuffle(selectedNpcs);
+    // 5. 최종 NPC 리스트 랜덤화 (자리 배치): 생성된 NPC들의 순서를 섞음
+    const shuffledNpcs = npcsForRound
+        .map(value => ({ value, sort: random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value);
+
+    selectedNpcs = shuffledNpcs;
 
     // 6. 선택된 NPC 에셋 로드 (이미지 로딩)
     npcAnimationFrames = [];
@@ -89,6 +91,8 @@ function preloadRound1Assets() {
     }
 
     console.log("--- preloadRound1Assets executed ---");
+    console.log("This round's stations:", roundStations);
+    console.log("Correct station:", currentStationName);
 }
 
 
@@ -185,7 +189,7 @@ class Round1 {
     
     console.log("--- Round1.setup() Debug Info ---");
     console.log("Correct NPC Index (instance):", this.correctNpcIndex);
-    console.log("Selected NPCs:", selectedNpcs);
+    console.log("Selected NPCs:", selectedNpcs.map(n => n.station));
     console.log("---------------------------------");
   }
   
