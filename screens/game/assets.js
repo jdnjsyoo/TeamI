@@ -25,14 +25,22 @@ let scoreImages = [];        // [score, score_1, score_2, score_3]
 // preload에서 로드된 gameScore를 기준으로 세팅
 function initScoreboard() {
   scoreCount = 0;
+
+  // ✅ 점수 이미지 로드 + 인덱스 태그 심기
   scoreImages = [
-    loadImage('assets/result/score.png'),
-    loadImage('assets/result/score_1.png'),
-    loadImage('assets/result/score_2.png'),
-    loadImage('assets/result/score_3.png'),
+    loadImage('assets/result/score.png',   img => img.__scoreIndex = 0),
+    loadImage('assets/result/score_1.png', img => img.__scoreIndex = 1),
+    loadImage('assets/result/score_2.png', img => img.__scoreIndex = 2),
+    loadImage('assets/result/score_3.png', img => img.__scoreIndex = 3),
   ];
+
+  // ✅ 현재 점수 이미지
   gameScore = scoreImages[0];
+
+  // ✅ 전역 점수 인덱스도 초기화
+  globalThis.currentScoreIndex = 0;
 }
+
 
 // SUCCESS 시 1회만 증가
 function addSuccessScoreOnce(instance) {

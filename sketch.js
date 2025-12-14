@@ -42,14 +42,26 @@ function switchToSelectPlayerScreen() {
 }
 
 function switchToGameScreen() {
+  resetScoreboard();
   applyScreen("gameScreen");
   if (typeof setup === "function") setup();
 }
 
 function switchToQuitScreen() {
+  resetScoreboard();   
   applyScreen("quitScreen");
   if (typeof setup === "function") setup();
 }
+
+function resetScoreboard() {
+  scoreCount = 0;
+
+  if (Array.isArray(scoreImages) && scoreImages.length > 0) {
+    gameScore = scoreImages[0]; // ✅ score.png 로
+  }
+  globalThis.currentScoreIndex = 0; // ✅ 리워드도 0부터
+}
+
 
 function switchToSettingsScreen() {
   applyScreen("settingsScreen");

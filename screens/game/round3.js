@@ -243,15 +243,27 @@ class Round3 {
     // ✅✅✅ [추가] success일 때 빌런(잠실 서있는 캐릭터) 움직임 완전 동결
     this.freezeVillainOnSuccess = false;
     this.frozenVillainOffsetX = 0;
+
+    // ✅ Reward(라운드3 엔딩) 화면
+    this.rewardImgs = [];          // 리워드 이미지들
+    this.showRewardScreen = false; // 엔딩 오버레이 표시 여부
+    this.rewardIndex = 0;          // 0~3
   }
 
   preloadAssets() {
+    // ✅ 기존 Round3 자산 로드
     preloadRound3Assets_SAFE();
 
     this.jamsilStandingImg = loadImage("assets/userCharacter/유저-3 뒷모습.png");
     this.eyeLightningImg = loadImage("assets/buttons/번개 눈빛.png");
     this.lightningEffectImg = loadImage("assets/buttons/번개 효과.png");
     this.gangnamStandingImg = loadImage("assets/npcChracter/standing/강남_직장인_스탠딩.png");
+
+    // ✅✅✅ 여기서 로드해야 this.rewardImgs가 제대로 채워짐
+    this.rewardImgs[0] = loadImage("assets/result/리워드 0.png");
+    this.rewardImgs[1] = loadImage("assets/result/리워드 1.png");
+    this.rewardImgs[2] = loadImage("assets/result/리워드 2.png");
+    this.rewardImgs[3] = loadImage("assets/result/리워드 3.png");
   }
 
   setup() {
@@ -378,6 +390,10 @@ class Round3 {
     // ✅✅✅ 빌런 동결 상태도 리셋
     this.freezeVillainOnSuccess = false;
     this.frozenVillainOffsetX = 0;
+
+    // ✅✅✅ 리워드 상태도 리셋
+    this.showRewardScreen = false;
+    this.rewardIndex = 0;
 
     this.introScriptPlayer = new ScriptPlayer(
       round3Scripts.round3_intro,
@@ -528,11 +544,11 @@ class Round3 {
 
     // ✅✅✅ [핵심] success가 뜨는 순간부터 빌런(잠실 서있는 캐릭터) 완전 동결
     if (isCorrect) {
-       if (typeof addSuccessScoreOnce === "function") {
-    addSuccessScoreOnce(this);
-  }
+      if (typeof addSuccessScoreOnce === "function") {
+        addSuccessScoreOnce(this);
+      }
       this.freezeVillainOnSuccess = true;
-      this.frozenVillainOffsetX = this.standingOffsetX; // 그 시점 위치로 고정
+      this.frozenVillainOffsetX = this.standingOffsetX;
       this.isEyeLightningActive = false;
       this.isLightningEffectActive = false;
 
@@ -584,6 +600,48 @@ class Round3 {
     }
     pop();
   }
+
+drawRewardOverlayIfNeeded() {
+  if (!this.showRewardScreen) {
+    if (this.resultScriptPlayer && this.resultScriptPlayer.isFinished()) {
+
+      // ✅✅✅ 이제 점수는 "이미지 기반으로 추적된 currentScoreIndex"를 신뢰한다
+      let idx = 0;
+      if (typeof globalThis.currentScoreIndex === "number" && Number.isFinite(globalThis.currentScoreIndex)) {
+        idx = globalThis.currentScoreIndex;
+      }
+
+      this.rewardIndex = constrain(Math.floor(idx), 0, 3);
+      this.showRewardScreen = true;
+    }
+  }
+
+  if (!this.showRewardScreen) return;
+
+  push();
+  resetMatrix();
+
+  noStroke();
+  fill(0, 0, 0, 180);
+  rect(0, 0, width, height);
+
+  const img = this.rewardImgs[this.rewardIndex];
+
+  if (img && img.width > 0 && img.height > 0) {
+    imageMode(CENTER);
+    const maxW = width * 0.45;
+    const sc = min(maxW / img.width, 1);
+    image(img, width / 2, height / 2, img.width * sc, img.height * sc);
+  } else {
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(24);
+    text(`Reward image not loaded: index ${this.rewardIndex}`, width/2, height/2);
+  }
+
+  pop();
+}
+
 
   draw() {
     background(0);
@@ -653,7 +711,6 @@ class Round3 {
       standW = this.jamsilStandingImg.width * scaleFactor;
       standH = this.jamsilStandingImg.height * scaleFactor;
 
-      // ✅✅✅ success면 frozenVillainOffsetX로 고정, 아니면 기존 standingOffsetX 사용
       const offsetX = (this.freezeVillainOnSuccess ? this.frozenVillainOffsetX : this.standingOffsetX);
 
       standMidX = baseMidX + offsetX;
@@ -745,12 +802,10 @@ class Round3 {
     const npcBottomY = drawNpcs(this, worldMouseX, worldMouseY);
     drawPlayer(this, npcBottomY);
 
-    // ✅ 기존 서있는 캐릭터(잠실) 렌더
     if (standExists) {
       image(this.jamsilStandingImg, standX, standY, standW, standH);
     }
 
-    // ✅ success 정답 NPC: "오직 1개만" + "앞 레이어" + "왼쪽 퇴장"
     this.drawCorrectNpcOnlyOnce_OnFrontLayer();
 
     if (this.gameStarted && this.isEyeLightningActive && !this.canMoveRightInStage2) {
@@ -775,9 +830,11 @@ class Round3 {
 
     pop();
 
+    // ✅ UI는 딱 한 번만
     drawUi(this);
     this.drawPersistentHintInScriptStyle();
 
+    // stage2 제한시간 끝 처리
     if (
       this.gameStarted &&
       this.stage === 2 &&
@@ -799,9 +856,14 @@ class Round3 {
         }
       }
     }
+
+    // ✅ 엔딩 리워드 오버레이 (UI 위에 덮기)
+    this.drawRewardOverlayIfNeeded();
   }
 
   keyPressed() {
+    if (this.showRewardScreen) return false;
+
     if (this.introState === "playing" && this.introScriptPlayer) {
       if (keyCode === 32) this.introScriptPlayer.next();
       return false;
@@ -819,8 +881,6 @@ class Round3 {
       return false;
     }
 
-    // ✅✅✅ success 확정 후에는 빌런 포함 “키 입력으로 움직임” 전부 차단
-    // (특히 ENTER로 standingOffsetX 밀기 방지)
     if (this.resultOverlayType === "success") {
       return false;
     }
@@ -850,7 +910,6 @@ class Round3 {
 
     if (keyCode === ENTER && this.stage === 2) {
       if (!this.canMoveRightInStage2) {
-        // ✅ (success는 위에서 return false로 이미 차단됨)
         this.standingOffsetX += 5;
 
         this.isEyeLightningActive = true;
@@ -870,6 +929,7 @@ class Round3 {
   }
 
   mousePressed() {
+    if (this.showRewardScreen) return;
     if (!this.gameStarted) return;
 
     if (
@@ -899,7 +959,6 @@ class Round3 {
       return;
     }
 
-    // ✅ sit here hover → 클릭 시 정답/오답 확정
     if (this.isSitButtonHovered) {
       this.isSitButtonPressed = true;
       this.sitButtonPressTime = millis();

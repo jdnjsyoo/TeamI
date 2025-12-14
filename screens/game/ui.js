@@ -228,59 +228,87 @@ function drawUi(instance) {
 
     // ======= 좌측 상단 게임 점수판 (스크린 좌표, 스케일/스크롤 영향 X) =======
    function drawScoreboardUI() {
- const boxX = 20;
-const boxY = 7;
-const boxW = 160;   // ⬅ 기존 130 → 160
-const boxH = 115;   // ⬅ 기존 95  → 115
+  const boxX = 20;
+  const boxY = 7;
+  const boxW = 160;
+  const boxH = 115;
 
-
-  // ✅ PNG별 보정값: 안 맞는 애들만 dx/dy/s 조정하면 끝
-  // key는 네가 쓰는 점수판 변수명에 맞춰 바꿔도 됨
-  const TUNE = {
-    // 예시) score1, score2는 거의 맞는다 했으니 0
-    score1: { dx: 0, dy: 0, s: 1.00 },
-    score2: { dx: 0, dy: 0, s: 1.00 },
-
-    // 안 맞는 애들만 여기서 미세 조절
-    score3: { dx: 0, dy: 0, s: 1.00 },
-    score4: { dx: 0, dy: 0, s: 1.00 },
-  };
-
-  // ✅ 지금 네 점수판 이미지 변수가 gameScore 하나면 그대로 쓰고,
-  // 여러 개면 아래처럼 현재 라운드/상태에 맞는 img를 선택해줘야 함.
-  // 일단 "현재 사용 중인 이미지"를 gameScore라고 가정.
+  // ✅ 현재 점수판 이미지 (네 코드 그대로)
   const img = (typeof gameScore !== "undefined") ? gameScore : null;
+
+  // ✅✅✅ 핵심: "지금 사용중인 점수 이미지"가 몇 번인지 추론해서 전역에 저장
+  function detectScoreIndexFromImage(activeImg) {
+    if (!activeImg) return 0;
+
+    // 1) 배열로 관리되는 경우: scoreImgs / scoreImages 등
+    const arr =
+      (Array.isArray(globalThis.scoreImgs) && globalThis.scoreImgs) ||
+      (Array.isArray(globalThis.scoreImages) && globalThis.scoreImages) ||
+      (Array.isArray(globalThis.scoreBoardImgs) && globalThis.scoreBoardImgs) ||
+      null;
+
+    if (arr) {
+      const idx = arr.indexOf(activeImg);
+      if (idx >= 0) return idx;
+    }
+
+    // 2) 개별 변수로 들고 있는 경우(프로젝트마다 네이밍이 제각각이라 최대한 넓게 커버)
+    const candidates = [
+      // score0~3
+      globalThis.score0, globalThis.score1, globalThis.score2, globalThis.score3,
+      // scoreImg0~3
+      globalThis.scoreImg0, globalThis.scoreImg1, globalThis.scoreImg2, globalThis.scoreImg3,
+      // score0Img~3Img
+      globalThis.score0Img, globalThis.score1Img, globalThis.score2Img, globalThis.score3Img,
+      // scoreImg_0~3
+      globalThis.scoreImg_0, globalThis.scoreImg_1, globalThis.scoreImg_2, globalThis.scoreImg_3,
+      // scoreboard0~3
+      globalThis.scoreboard0, globalThis.scoreboard1, globalThis.scoreboard2, globalThis.scoreboard3,
+      // gameScore0~3 (혹시 이런 식이면)
+      globalThis.gameScore0, globalThis.gameScore1, globalThis.gameScore2, globalThis.gameScore3,
+    ];
+
+    for (let i = 0; i < candidates.length; i++) {
+      if (candidates[i] && candidates[i] === activeImg) {
+        // candidates는 묶음이 섞여있으니, "0~3이 연속인 첫 묶음"을 우선으로 타게 설계함
+        // 위 배열 순서상 0~3 단위가 반복되므로 i % 4가 안정적으로 0~3을 뽑아줌
+        return i % 4;
+      }
+    }
+
+    // 3) 마지막 수단: 혹시 이미지 객체에 우리가 심어둔 태그가 있다면 사용
+    if (typeof activeImg.__scoreIndex === "number") return activeImg.__scoreIndex;
+
+    return 0;
+  }
+
+  // ✅ 여기서 전역 갱신(리워드가 이걸 읽게 됨)
+  const idx = detectScoreIndexFromImage(img);
+  globalThis.currentScoreIndex = constrain(idx, 0, 3);
 
   push();
 
-  // 디버그용 박스(원하면 지워)
-  // noFill(); stroke(0,255,0); rect(boxX, boxY, boxW, boxH);
-
   if (img) {
-    // 어떤 튠을 쓸지: 네가 score3/4 등을 실제로 어떻게 고르는지에 따라 key를 바꿔야 함
-    // 일단 기본 튠
-    const tune = TUNE.score1 || { dx: 0, dy: 0, s: 1.0 };
-    drawImageContain(img, boxX, boxY, boxW, boxH, tune);
+    // 기존 contain 렌더링 유지
+    drawImageContain(img, boxX, boxY, boxW, boxH, { dx: 0, dy: 0, s: 1.0 });
   } else {
     fill(0, 0, 0, 180);
     stroke(255);
     rect(boxX, boxY, boxW, boxH, 12);
   }
 
-  // 점수 텍스트
-  let scoreVal = 0;
-  if (typeof score !== "undefined" && Number.isFinite(score)) scoreVal = score;
-  else if (typeof gameScoreValue !== "undefined" && Number.isFinite(gameScoreValue)) scoreVal = gameScoreValue;
-
+  // (참고) 숫자 텍스트는 이제 currentScoreIndex를 쓰는게 맞음
+  // 기존 score/gameScoreValue는 안 맞는 경우가 많아서 리워드랑 불일치가 생김.
   if (typeof dungGeunMoFont !== "undefined" && dungGeunMoFont) textFont(dungGeunMoFont);
   fill(255);
   noStroke();
   textAlign(CENTER, CENTER);
   textSize(26);
-  text(String(scoreVal), boxX + boxW / 2, boxY + boxH / 2);
+  text(String(globalThis.currentScoreIndex ?? 0), boxX + boxW / 2, boxY + boxH / 2);
 
   pop();
 }
+
 
 
 
