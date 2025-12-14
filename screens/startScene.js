@@ -31,6 +31,7 @@ function startScreenPreload() {
   imgStart = loadImage("assets/start/시작화면.png");
   imgHowto = loadImage("assets/start/플레이방법.png");
   imgHint  = loadImage("assets/start/힌트화면.png");
+  selectPlayerPreload();
   gameScreenPreload();
 }
 
@@ -103,8 +104,8 @@ function startScreenMousePressed() {
   if (startState === "menu") {
     if (insideCircle(mouseX, mouseY, btnStart)) {
       // 👉 여기서 실제 게임 화면으로 전환
-      if (typeof switchToGameScreen === "function") {
-        switchToGameScreen();
+      if (typeof switchToSelectPlayerScreen === "function") {
+        switchToSelectPlayerScreen();
       }
       return;
     } else if (insideCircle(mouseX, mouseY, btnHowto)) {

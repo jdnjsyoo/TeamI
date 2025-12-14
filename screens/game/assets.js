@@ -24,10 +24,10 @@ function gameScreenPreload() {
   dialogImg = loadImage('assets/subwayBackground/대화창.png');
 
   // 플레이어
-  img = loadImage('assets/userCharacter/유저-1 걷는 옆모습 모션 (1).png');
-  imgFront = loadImage('assets/userCharacter/유저-1 정면 스탠딩.png');
-  imgBack  = loadImage('assets/userCharacter/유저-1 뒷모습.png');
-  imgSit   = loadImage('assets/userCharacter/유저-1 기본 착석.png'); // ⭐ 추가
+  img = loadImage(`assets/userCharacter/유저-${playerCharacterIndex} 걷는 옆모습 모션 (1).png`);
+  imgFront = loadImage(`assets/userCharacter/유저-${playerCharacterIndex} 정면 스탠딩.png`);
+  imgBack  = loadImage(`assets/userCharacter/유저-${playerCharacterIndex} 뒷모습.png`);
+  imgSit   = loadImage(`assets/userCharacter/유저-${playerCharacterIndex} 기본 착석.png`); // ⭐ 추가
 
   // 버튼 이미지 로드
   stopButton = loadImage('assets/buttons/stop_투명.png');
