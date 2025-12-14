@@ -1,3 +1,4 @@
+let playerCharacterIndex = 1; // 1, 2, or 3
 let x = 200;
 let y = 480;          // 바닥에 있을 때 y
 let groundY = 480;    // 캐릭터가 항상 유지할 y

@@ -32,6 +32,13 @@ function applyScreen(prefix) {
 // 각 화면으로 전환하는 함수들
 // =========================
 
+function switchToSelectPlayerScreen() {
+  applyScreen("selectPlayer");
+  if (typeof setup === "function") {
+    setup();
+  }
+}
+
 function switchToGameScreen() {
   applyScreen("gameScreen");
   if (typeof setup === "function") {
