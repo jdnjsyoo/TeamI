@@ -140,6 +140,34 @@ function drawUi(instance) {
         let dX = (width - dW) / 2;
         let dY = height - dH;
         image(dialogImg, dX, dY, dW, dH);
+
+        // Stage 1 & 2 스크립트 출력
+        if (instance && instance.gameStarted && !instance.resultOverlayType) {
+            let scriptText = "";
+            // Round 1의 경우
+            if (typeof instance.isRound2 === 'undefined' || !instance.isRound2) {
+                if (instance.stage === 2) {
+                    scriptText = round1Scripts.round1_playing[0];
+                } else if (instance.stage === 1 && instance.isStationImgActive) {
+                    scriptText = round1Scripts.round1_sithere[0];
+                }
+            }
+
+            if (scriptText) {
+                if (dungGeunMoFont) {
+                    textFont(dungGeunMoFont);
+                }
+                fill(255);
+                textSize(30);
+                textAlign(LEFT, TOP);
+
+                const lines = scriptText.split('\n');
+                const lineHeight = 40;
+                for (let i = 0; i < lines.length; i++) {
+                    text(lines[i], dX + 50, dY + 35 + i * lineHeight, dW - 100, lineHeight);
+                }
+            }
+        }
     }
 
     // ======= 우측 상단 버튼 (스크린 좌표, 스케일/스크롤 영향 X) =======
