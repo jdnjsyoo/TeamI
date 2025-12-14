@@ -111,3 +111,7 @@ let dungGeunMoFont; // 모든 라운드에서 사용할 폰트
 let isTargetArrowHovered = false;
 let round2Scripts;
 
+// 설정
+// ===== 설정 화면용 =====
+let settingsScreenBackdrop = null; // 설정창 배경 캡처
+let screenBeforeSettings = null;   // 설정 들어오기 전 화면
