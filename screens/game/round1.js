@@ -3,14 +3,14 @@ let roundPlayingSound;
 
 // 모든 역의 NPC 정보를 담는 객체
 const npcData = {
-    "강남": [{ spec: "직장인", frames: 2 }, { spec: "화장", frames: 2 }],
+    "강남": [{ spec: "명품", frames: 2 }, { spec: "직장인", frames: 2 }, { spec: "화장", frames: 2 }],
     "강변": [{ spec: "군인", frames: 2 }, { spec: "백팩", frames: 2 }, { spec: "캐리어", frames: 3 }],
     "서울대입구": [{ spec: "잠", frames: 2 }, { spec: "책", frames: 2 }],
     "성수": [{ spec: "쇼핑백", frames: 2 }, { spec: "폰", frames: 2 }],
     "시청": [{ spec: "서류", frames: 3 }, { spec: "집회", frames: 2 }],
     "을지로": [{ spec: "외국인", frames: 2 }, { spec: "힙합", frames: 3 }],
     "잠실": [{ spec: "코트", frames: 2 }, { spec: "학생", frames: 2 }],
-    "홍대": [{ spec: "애니", frames: 3 }, { spec: "탈색", frames: 3 }]
+    "홍대": [{ spec: "보드", frames: 2 }, { spec: "애니", frames: 3 }, { spec: "탈색", frames: 3 }]
 };
 
 const stage2DurationRound1 = 30000; // 라운드 1의 stage 2 지속 시간: 30초
