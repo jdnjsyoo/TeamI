@@ -168,6 +168,11 @@ function selectPlayerMousePressed() {
         mouseY >= sp_mainBtn.y && mouseY <= sp_mainBtn.y + sp_mainBtn.h
     ) {
         if (sp_selectedButton !== -1) {
+            // 선택된 캐릭터 에셋으로 설정
+            if (typeof setPlayerCharacterAssets === "function") {
+                setPlayerCharacterAssets(playerCharacterIndex);
+            }
+            
             // round1 시작(게임 화면으로 전환)
             selectPlayerStopBgm();
             if (typeof switchToGameScreen === "function") {
