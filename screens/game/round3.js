@@ -528,6 +528,9 @@ class Round3 {
 
     // ✅✅✅ [핵심] success가 뜨는 순간부터 빌런(잠실 서있는 캐릭터) 완전 동결
     if (isCorrect) {
+       if (typeof addSuccessScoreOnce === "function") {
+    addSuccessScoreOnce(this);
+  }
       this.freezeVillainOnSuccess = true;
       this.frozenVillainOffsetX = this.standingOffsetX; // 그 시점 위치로 고정
       this.isEyeLightningActive = false;

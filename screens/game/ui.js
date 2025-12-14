@@ -124,6 +124,31 @@ class ScriptPlayer {
   }
 }
 
+function drawImageContain(img, boxX, boxY, boxW, boxH, opt = {}) {
+  if (!img) return;
+
+  const dx = opt.dx || 0;     // ✅ 내용 좌우 보정(픽셀)
+  const dy = opt.dy || 0;     // ✅ 내용 상하 보정(픽셀)
+  const s  = opt.s  || 1.0;   // ✅ 전체 스케일 보정(1.0이 기본)
+
+  const rImg = img.width / img.height;
+  const rBox = boxW / boxH;
+
+  let w, h;
+  if (rImg > rBox) {
+    w = boxW * s;
+    h = (boxW / rImg) * s;
+  } else {
+    h = boxH * s;
+    w = (boxH * rImg) * s;
+  }
+
+  const x = boxX + (boxW - w) / 2 + dx;
+  const y = boxY + (boxH - h) / 2 + dy;
+
+  image(img, x, y, w, h);
+}
+
 
 function drawUi(instance) {
     // 인트로 스크립트 재생
@@ -202,16 +227,66 @@ function drawUi(instance) {
     pop();
 
     // ======= 좌측 상단 게임 점수판 (스크린 좌표, 스케일/스크롤 영향 X) =======
-    push();
-    const gameScoreX = 20; // 왼쪽 여백 20px
-    const gameScoreY = 17; // 위쪽 여백 17px
-    const gameScoreWidth = 130; // 버튼과 동일한 너비
-    const gameScoreHeight = 95; // 버튼과 동일한 높이
+   function drawScoreboardUI() {
+ const boxX = 20;
+const boxY = 7;
+const boxW = 160;   // ⬅ 기존 130 → 160
+const boxH = 115;   // ⬅ 기존 95  → 115
 
-    if (gameScore) {
-        image(gameScore, gameScoreX, gameScoreY, gameScoreWidth, gameScoreHeight);
-    }
-    pop();
+
+  // ✅ PNG별 보정값: 안 맞는 애들만 dx/dy/s 조정하면 끝
+  // key는 네가 쓰는 점수판 변수명에 맞춰 바꿔도 됨
+  const TUNE = {
+    // 예시) score1, score2는 거의 맞는다 했으니 0
+    score1: { dx: 0, dy: 0, s: 1.00 },
+    score2: { dx: 0, dy: 0, s: 1.00 },
+
+    // 안 맞는 애들만 여기서 미세 조절
+    score3: { dx: 0, dy: 0, s: 1.00 },
+    score4: { dx: 0, dy: 0, s: 1.00 },
+  };
+
+  // ✅ 지금 네 점수판 이미지 변수가 gameScore 하나면 그대로 쓰고,
+  // 여러 개면 아래처럼 현재 라운드/상태에 맞는 img를 선택해줘야 함.
+  // 일단 "현재 사용 중인 이미지"를 gameScore라고 가정.
+  const img = (typeof gameScore !== "undefined") ? gameScore : null;
+
+  push();
+
+  // 디버그용 박스(원하면 지워)
+  // noFill(); stroke(0,255,0); rect(boxX, boxY, boxW, boxH);
+
+  if (img) {
+    // 어떤 튠을 쓸지: 네가 score3/4 등을 실제로 어떻게 고르는지에 따라 key를 바꿔야 함
+    // 일단 기본 튠
+    const tune = TUNE.score1 || { dx: 0, dy: 0, s: 1.0 };
+    drawImageContain(img, boxX, boxY, boxW, boxH, tune);
+  } else {
+    fill(0, 0, 0, 180);
+    stroke(255);
+    rect(boxX, boxY, boxW, boxH, 12);
+  }
+
+  // 점수 텍스트
+  let scoreVal = 0;
+  if (typeof score !== "undefined" && Number.isFinite(score)) scoreVal = score;
+  else if (typeof gameScoreValue !== "undefined" && Number.isFinite(gameScoreValue)) scoreVal = gameScoreValue;
+
+  if (typeof dungGeunMoFont !== "undefined" && dungGeunMoFont) textFont(dungGeunMoFont);
+  fill(255);
+  noStroke();
+  textAlign(CENTER, CENTER);
+  textSize(26);
+  text(String(scoreVal), boxX + boxW / 2, boxY + boxH / 2);
+
+  pop();
+}
+
+
+
+drawScoreboardUI();
+
+
 
     // Timer rendering in stage 2
     if (instance.stage === 2 && timeBarBase && timeBar) {

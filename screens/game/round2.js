@@ -224,30 +224,30 @@ if (!this.round2Finished && this.gameStarted) {
 
   const playerCenterX = this.x + playerScale / 2;
 
-  if (playerCenterX >= seatLeft && playerCenterX <= seatRight) {
-    this.round2Finished = true;
-    this.round2Result = "success";
+if (playerCenterX >= seatLeft && playerCenterX <= seatRight) {
+  this.round2Finished = true;
+  this.round2Result = "success";
 
-    // 자리 위치로 스냅 + 앉기
-    this.x = seatX;
-    this.playerDir = "sit";
+  // ✅ 점수 +1 (Round2 성공 시 1회만)
+  if (typeof addSuccessScoreOnce === "function") addSuccessScoreOnce(this);
+  // (구버전 함수명이라면 아래로 교체)
+  // if (typeof registerSuccessOnce === "function") registerSuccessOnce();
 
-    this.resultOverlayType = "success";
-    this.resultOverlayStartTime = millis();
+  // 자리 위치로 스냅 + 앉기
+  this.x = seatX;
+  this.playerDir = "sit";
 
-    // 성공 스크립트
-    if (
-      round2Scripts &&
-      round2Scripts.round2_success &&
-      typeof ScriptPlayer === "function"
-    ) {
-      this.resultScriptPlayer = new ScriptPlayer(
-        round2Scripts.round2_success
-      );
-    }
+  this.resultOverlayType = "success";
+  this.resultOverlayStartTime = millis();
 
-    console.log("ROUND 2 SUCCESS: auto-arrived at seat");
+  // 성공 스크립트
+  if (round2Scripts && round2Scripts.round2_success && typeof ScriptPlayer === "function") {
+    this.resultScriptPlayer = new ScriptPlayer(round2Scripts.round2_success);
   }
+
+  console.log("ROUND 2 SUCCESS: auto-arrived at seat");
+}
+
 }
 
 

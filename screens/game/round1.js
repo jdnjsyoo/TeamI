@@ -167,6 +167,7 @@ class Round1 {
           scriptBgSound.stop();
       }
     });
+    this._scoreAdded = false; // ⭐ SUCCESS 중복 방지
   }
 
   setDebugColor(c) {
@@ -474,6 +475,7 @@ class Round1 {
     // 정답 확인 로직
     if (this.hoveredSitNpcIndex === this.correctNpcIndex) {
       this.resultOverlayType = 'success';
+       addSuccessScoreOnce(this);
       this.npcStandingIndex = this.correctNpcIndex;
       this.npcStandTriggerTime = millis();
       this.playerShouldSit = false;
