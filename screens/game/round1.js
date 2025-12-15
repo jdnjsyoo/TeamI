@@ -346,6 +346,7 @@ class Round1 {
         this.selectedNpcIndex = this.highlightedNpcIndex;
         this.stage2StartTime = null;
         this.hasReturnedFromStage2 = true; // timeout으로 돌아왔음을 표시
+        this.playerDir = "back"; // 뒷모습으로 변경
         // Stage 2 타이머가 끝나서 Stage 1으로 돌아올 때 음악 변경
           if (roundPlayingSound && roundPlayingSound.isLoaded() && roundPlayingSound.isPlaying()) {
             roundPlayingSound.stop();
@@ -421,8 +422,7 @@ class Round1 {
           this.stage = 1;
           this.selectedNpcIndex = this.highlightedNpcIndex;
           this.stage2StartTime = null;
-          this.hasReturnedFromStage2 = true; // 스페이스바로 돌아왔음을 표시
-          // Stage 2에서 Stage 1으로 돌아올 때 음악 변경
+          this.hasReturnedFromStage2 = true; // 스페이스바로 돌아왔음을 표시          this.playerDir = "back"; // 뒷모습으로 변경          // Stage 2에서 Stage 1으로 돌아올 때 음악 변경
           if (roundPlayingSound && roundPlayingSound.isPlaying()) {
               roundPlayingSound.stop();
           }
