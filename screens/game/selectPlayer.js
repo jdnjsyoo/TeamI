@@ -48,7 +48,7 @@ let sp_mainBtn = null;
 function selectPlayerPreload() {
         // 배경음악 미리 로드
         sp_bgm = loadSound('assets/sound/playerselect.mp3');
-    sp_bg = loadImage("assets/start/Tutorial.png");
+    sp_bg = loadImage("assets/start/chs.player.png");
     sp_chars[0] = loadImage("assets/userCharacter/유저-1 정면 스탠딩.png");
     sp_chars[1] = loadImage("assets/userCharacter/유저-2 정면 스탠딩.png");
     sp_chars[2] = loadImage("assets/userCharacter/유저-3 정면 스탠딩.png");
