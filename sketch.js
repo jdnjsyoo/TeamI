@@ -6,6 +6,11 @@ let typingSound;
 
 let stopScreenBackdrop = null; // ⭐ stopScreen 반투명 배경용 스냅샷
 
+//설정
+let volBarEmptyImg; // 음량바 0
+let volBarFullImg; // 음량바 100
+let closeBtnImg = null;
+
 function preload() {
   // 전역 사운드 로드
   clickSound = loadSound('assets/sound/click.mp3', () => {
@@ -20,6 +25,10 @@ function preload() {
   if (typeof fn === "function") {
     fn();
   }
+
+ volBarEmptyImg = loadImage("assets/buttons/음량바 0.png");
+ volBarFullImg  = loadImage("assets/buttons/음량바 100.png");
+ closeBtnImg = loadImage("assets/buttons/quit_투명.png");
 }
 
 function applyScreen(prefix) {
@@ -64,9 +73,20 @@ function resetScoreboard() {
 
 
 function switchToSettingsScreen() {
+  if (currentScreenPrefix === "settingsScreen") return;
+
+  screenBeforeSettings = currentScreenPrefix;
+
+  try {
+    settingsScreenBackdrop = get(); // 현재 화면 캡처
+  } catch (e) {
+    settingsScreenBackdrop = null;
+  }
+
   applyScreen("settingsScreen");
   if (typeof setup === "function") setup();
 }
+
 
 function switchToStopScreen() {
   // ✅ 중복 진입 방지 (stopScreen에서 또 stopScreen으로 들어가면 클릭 씹힘/스냅샷 꼬임)
@@ -163,3 +183,18 @@ function resetGameState() {
   console.log("Game state fully reset");
 }
 
+
+function mouseDragged() {
+  const fn = window[`${currentScreenPrefix}MouseDragged`];
+  if (typeof fn === "function") fn();
+}
+
+function mouseReleased() {
+  const fn = window[`${currentScreenPrefix}MouseReleased`];
+  if (typeof fn === "function") fn();
+}
+
+function closeSettingsScreen() {
+  if (!screenBeforeSettings) return;
+  applyScreen(screenBeforeSettings);
+}
