@@ -46,11 +46,18 @@ class Round2 {
     this.isRound2 = true;   // 🔥 이 라운드가 2라운드라는 표시
     this.stage = 2; 
 
-    // 사운드 로드 (이미 로드된 경우 중복 방지)
-    if (typeof loadSound === 'function' && typeof roundPlayingSound === 'undefined') {
-      roundPlayingSound = loadSound('assets/sound/round_playing.mp3', () => {
-        roundPlayingSound.setVolume(0.5);
-      });
+    // 사운드 로드
+    if (typeof loadSound === 'function') {
+      if (typeof scriptBgSound === 'undefined') {
+        scriptBgSound = loadSound('assets/sound/script_bg.wav', () => {
+          scriptBgSound.setVolume(0.5);
+        });
+      }
+      if (typeof roundPlayingSound === 'undefined') {
+        roundPlayingSound = loadSound('assets/sound/round_playing.mp3', () => {
+          roundPlayingSound.setVolume(0.5);
+        });
+      }
     }
     // 속도 관련 (라운드2 전용)
     this.speed = ROUND2_BASE_SPEED;
@@ -131,9 +138,10 @@ if (round2Scripts &&
     // stage2 진입 시 사운드 재생
     this.stage = 2;
     this.stage2StartTime = millis();
-    // 게임 플레이 음악 시작
-      if (roundPlayingSound && roundPlayingSound.isLoaded() && !roundPlayingSound.isPlaying()) {
-      roundPlayingSound.loop();
+    
+    // 인트로 중에는 script_bg 재생
+    if (scriptBgSound && scriptBgSound.isLoaded() && !scriptBgSound.isPlaying()) {
+      scriptBgSound.loop();
     }
   }
 
@@ -170,9 +178,25 @@ if (round2Scripts &&
     this.y = backgr ? backgr.height - 80 : groundY;
     //this.environment.display(false, 2);
 
-    // stage2에서 음악이 안 나오면 보장
-      if (this.stage === 2 && roundPlayingSound && roundPlayingSound.isLoaded() && !roundPlayingSound.isPlaying()) {
-      roundPlayingSound.loop();
+    // 음악 재생 로직: 게임 시작 전에는 script_bg, 시작 후에는 round_playing
+    if (this.gameStarted) {
+      // 게임 시작 후: round_playing 재생
+      if (roundPlayingSound && roundPlayingSound.isLoaded() && !roundPlayingSound.isPlaying()) {
+        roundPlayingSound.loop();
+      }
+      // script_bg 정지
+      if (scriptBgSound && scriptBgSound.isPlaying()) {
+        scriptBgSound.stop();
+      }
+    } else {
+      // 게임 시작 전: script_bg 재생
+      if (scriptBgSound && scriptBgSound.isLoaded() && !scriptBgSound.isPlaying()) {
+        scriptBgSound.loop();
+      }
+      // round_playing 정지
+      if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+        roundPlayingSound.stop();
+      }
     }
 
     // 플레이어 이동
@@ -488,13 +512,18 @@ if (key === 's' || key === 'S') {
   return false;
 }
 
-
-
     // ✅ 바로 3라운드 넘어가는 L 치트키 (디버그용)
     if (key === 'l' || key === 'L') {
+        // Round2 음악 정지
+        if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+          roundPlayingSound.stop();
+        }
+        if (scriptBgSound && scriptBgSound.isPlaying()) {
+          scriptBgSound.stop();
+        }
+        
         if (typeof switchToRound3 === "function") {
           switchToRound3();
-          
         }
         console.log("DEBUG: Force switch to Round 3 by L key");
         return false;   // 다른 키 처리 안 하도록 바로 종료
@@ -519,6 +548,14 @@ if (key === 's' || key === 'S') {
       this.stage2StartTime = millis(); // 필요하면 타이머 시작
       this.round2EndTime = millis() + ROUND2_TIME_LIMIT;
 
+      // 음악 전환: script_bg 정지, round_playing 시작
+      if (scriptBgSound && scriptBgSound.isPlaying()) {
+        scriptBgSound.stop();
+      }
+      if (roundPlayingSound && roundPlayingSound.isLoaded()) {
+        roundPlayingSound.loop();
+      }
+
       return false;
     }
 
@@ -531,6 +568,14 @@ if (key === 's' || key === 'S') {
 
   if ((key === 'n' || key === 'N')) {
     if (this.resultScriptPlayer && this.resultScriptPlayer.isFinished()) {
+        // Round2 음악 정지
+        if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+          roundPlayingSound.stop();
+        }
+        if (scriptBgSound && scriptBgSound.isPlaying()) {
+          scriptBgSound.stop();
+        }
+        
         if (typeof switchToRound3 === "function") {
             switchToRound3();
         }
