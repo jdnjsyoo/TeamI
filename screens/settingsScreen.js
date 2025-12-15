@@ -171,23 +171,32 @@ function drawVolumeBar(bar, v) {
   pop();
 }
 
+// screens/settingsScreen.js 의 마우스 누름 함수 수정
+
 function settingsScreenMousePressed() {
   rebuildSoundGroups();
 
+  // 1. 닫기 버튼을 눌렀을 때 (기존 코드 유지)
   if (isHover(btnClose)) {
-    closeSettingsScreen();
+    if (typeof startState !== 'undefined' && startState === "settings") {
+      startState = "menu"; 
+      settingsScreenBackdrop = null;
+    } else if (typeof closeSettingsScreen === "function") {
+      closeSettingsScreen();
+    }
     return;
   }
 
+  // ✅ [여기가 빠져 있었음!] 볼륨 바 클릭 감지 코드 추가
+  // 배경음악 바를 눌렀니?
   if (isInsideRect(mouseX, mouseY, bgmBar)) {
-    draggingTarget = "bgm";
-    setVolFromMouse("bgm", bgmBar);
-    return;
-  }
-  if (isInsideRect(mouseX, mouseY, sfxBar)) {
-    draggingTarget = "sfx";
-    setVolFromMouse("sfx", sfxBar);
-    return;
+    draggingTarget = "bgm";       // "나 지금 BGM 잡았다!"라고 표시
+    setVolFromMouse("bgm", bgmBar); // 클릭하자마자 해당 위치로 볼륨 이동
+  } 
+  // 효과음 바를 눌렀니?
+  else if (isInsideRect(mouseX, mouseY, sfxBar)) {
+    draggingTarget = "sfx";       // "나 지금 SFX 잡았다!"라고 표시
+    setVolFromMouse("sfx", sfxBar); // 클릭하자마자 해당 위치로 볼륨 이동
   }
 }
 
