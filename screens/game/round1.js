@@ -167,7 +167,6 @@ class Round1 {
           scriptBgSound.stop();
       }
     });
-    this._scoreAdded = false; // ⭐ SUCCESS 중복 방지
   }
 
   setDebugColor(c) {
@@ -427,81 +426,40 @@ class Round1 {
   }
 
 
- mousePressed() {
-  // =========================
-  // ✅ 0) UI 버튼은 항상 최우선 (스크립트/결과 화면 중에도 클릭 허용)
-  // =========================
-  if (
-    stopBtnX !== undefined &&
-    mouseX >= stopBtnX && mouseX <= stopBtnX + stopBtnW &&
-    mouseY >= stopBtnY && mouseY <= stopBtnY + stopBtnH
-  ) {
-    if (typeof switchToStopScreen === "function") switchToStopScreen();
-    return;
-  }
+  // 마우스 클릭 이벤트 핸들러
+  mousePressed() {
+    if (!this.gameStarted || this.resultOverlayType) return; // 게임 시작 전 또는 결과 화면이 표시된 후에는 클릭 무시
 
-  if (
-    quitBtnX !== undefined &&
-    mouseX >= quitBtnX && mouseX <= quitBtnX + quitBtnW &&
-    mouseY >= quitBtnY && mouseY <= quitBtnY + quitBtnH
-  ) {
-    if (typeof switchToQuitScreen === "function") switchToQuitScreen();
-    return;
-  }
-
-  if (
-    settingBtnX !== undefined &&
-    mouseX >= settingBtnX && mouseX <= settingBtnX + settingBtnW &&
-    mouseY >= settingBtnY && mouseY <= settingBtnY + settingBtnH
-  ) {
-    if (typeof switchToSettingsScreen === "function") switchToSettingsScreen();
-    return;
-  }
-
-  // =========================
-  // ✅ 1) 여기부터는 게임 클릭만 처리
-  // (게임 시작 전 / 결과 오버레이 중에는 게임 클릭 무시)
-  // =========================
-  if (!this.gameStarted) return;
-  if (this.resultOverlayType) return;  // FAIL/SUCCESS 떠 있으면 sitHere 등은 막기
-
-  // =========================
-  // ✅ 2) sit here 버튼
-  // =========================
-  if (this.isSitButtonHovered) {
-    this.isSitButtonPressed = true;
-    this.sitButtonPressTime = millis();
-
-    // 정답 확인 로직
-    if (this.hoveredSitNpcIndex === this.correctNpcIndex) {
-      this.resultOverlayType = 'success';
-       addSuccessScoreOnce(this);
-      this.npcStandingIndex = this.correctNpcIndex;
-      this.npcStandTriggerTime = millis();
-      this.playerShouldSit = false;
-      this.targetSeatX = this.npcPositions[this.correctNpcIndex].x;
-      this.playerDir = "right";
-
-      this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {});
-
-      setTimeout(() => {
-        this.playerDir = "sit";
-        this.playerShouldSit = true;
-      }, 4000);
-
-    } else {
-      this.resultOverlayType = 'fail';
-      this.resultOverlayStartTime = millis();
-
-      this.npcStandingIndex = this.correctNpcIndex;
-      this.npcStandTriggerTime = millis();
-      this.playerShouldSit = false;
-      this.targetSeatX = null;
-
-      this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {});
+    // --- UI 버튼들 (stop, quit, setting) ---
+    if (
+      stopBtnX !== undefined &&
+      mouseX >= stopBtnX && mouseX <= stopBtnX + stopBtnW &&
+      mouseY >= stopBtnY && mouseY <= stopBtnY + stopBtnH
+    ) {
+      if (typeof switchToStopScreen === "function") switchToStopScreen();
+      return;
     }
-    return;
-  }
+    // ... (quit, setting 버튼 로직은 동일) ...
+    if (
+      quitBtnX !== undefined &&
+      mouseX >= quitBtnX && mouseX <= quitBtnX + quitBtnW &&
+      mouseY >= quitBtnY && mouseY <= quitBtnY + quitBtnH
+    ) {
+      if (typeof switchToQuitScreen === "function") {
+        switchToQuitScreen();
+      }
+      return;
+    }
+    if (
+      settingBtnX !== undefined &&
+      mouseX >= settingBtnX && mouseX <= settingBtnX + settingBtnW &&
+      mouseY >= settingBtnY && mouseY <= settingBtnY + settingBtnH
+    ) {
+      if (typeof switchToSettingsScreen === "function") {
+        switchToSettingsScreen();
+      }
+      return;
+    }
 
 
     // --- sit here 버튼 ---

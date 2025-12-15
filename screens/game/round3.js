@@ -254,6 +254,20 @@ class Round3 {
     // ✅ 기존 Round3 자산 로드
     preloadRound3Assets_SAFE();
 
+    // 사운드 로드
+    if (typeof loadSound === 'function') {
+      if (typeof scriptBgSound === 'undefined') {
+        scriptBgSound = loadSound('assets/sound/script_bg.wav', () => {
+          scriptBgSound.setVolume(0.5);
+        });
+      }
+      if (typeof roundPlayingSound === 'undefined') {
+        roundPlayingSound = loadSound('assets/sound/round_playing.mp3', () => {
+          roundPlayingSound.setVolume(0.5);
+        });
+      }
+    }
+
     this.jamsilStandingImg = loadImage("assets/userCharacter/유저-3 뒷모습.png");
     this.eyeLightningImg = loadImage("assets/buttons/번개 눈빛.png");
     this.lightningEffectImg = loadImage("assets/buttons/번개 효과.png");
@@ -404,6 +418,11 @@ class Round3 {
         this.gameStarted = false;
       }
     );
+
+    // 인트로 중에는 script_bg 재생
+    if (scriptBgSound && scriptBgSound.isLoaded() && !scriptBgSound.isPlaying()) {
+      scriptBgSound.loop();
+    }
   }
 
   startGameAfterOverlay() {
@@ -413,6 +432,14 @@ class Round3 {
     this.gameStarted = true;
     this.timerStartTime = millis();
     this.stage2StartTime = millis();
+
+    // 음악 전환: script_bg 정지, round_playing 시작
+    if (scriptBgSound && scriptBgSound.isPlaying()) {
+      scriptBgSound.stop();
+    }
+    if (roundPlayingSound && roundPlayingSound.isLoaded()) {
+      roundPlayingSound.loop();
+    }
 
     this.enterStage2();
   }
@@ -648,6 +675,27 @@ drawRewardOverlayIfNeeded() {
 
     const worldGroundY = backgr ? backgr.height - 80 : height - 50;
     this.y = backgr ? backgr.height - 80 : worldGroundY;
+
+    // 음악 재생 로직: 게임 시작 전에는 script_bg, 시작 후에는 round_playing
+    if (this.gameStarted) {
+      // 게임 시작 후: round_playing 재생
+      if (roundPlayingSound && roundPlayingSound.isLoaded() && !roundPlayingSound.isPlaying()) {
+        roundPlayingSound.loop();
+      }
+      // script_bg 정지
+      if (scriptBgSound && scriptBgSound.isPlaying()) {
+        scriptBgSound.stop();
+      }
+    } else {
+      // 게임 시작 전: script_bg 재생
+      if (scriptBgSound && scriptBgSound.isLoaded() && !scriptBgSound.isPlaying()) {
+        scriptBgSound.loop();
+      }
+      // round_playing 정지
+      if (roundPlayingSound && roundPlayingSound.isPlaying()) {
+        roundPlayingSound.stop();
+      }
+    }
 
     this.environment.display(this.isStationImgActive, this.stage);
 
