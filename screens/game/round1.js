@@ -167,6 +167,7 @@ class Round1 {
           scriptBgSound.stop();
       }
     });
+     this._scoreAdded = false; // ⭐ SUCCESS 중복 방지
   }
 
   setDebugColor(c) {
@@ -427,85 +428,116 @@ class Round1 {
 
 
   // 마우스 클릭 이벤트 핸들러
-  mousePressed() {
-    if (!this.gameStarted || this.resultOverlayType) return; // 게임 시작 전 또는 결과 화면이 표시된 후에는 클릭 무시
-
-    // --- UI 버튼들 (stop, quit, setting) ---
-    if (
-      stopBtnX !== undefined &&
-      mouseX >= stopBtnX && mouseX <= stopBtnX + stopBtnW &&
-      mouseY >= stopBtnY && mouseY <= stopBtnY + stopBtnH
-    ) {
-      if (typeof switchToStopScreen === "function") switchToStopScreen();
-      return;
-    }
-    // ... (quit, setting 버튼 로직은 동일) ...
-    if (
-      quitBtnX !== undefined &&
-      mouseX >= quitBtnX && mouseX <= quitBtnX + quitBtnW &&
-      mouseY >= quitBtnY && mouseY <= quitBtnY + quitBtnH
-    ) {
-      if (typeof switchToQuitScreen === "function") {
-        switchToQuitScreen();
-      }
-      return;
-    }
-    if (
-      settingBtnX !== undefined &&
-      mouseX >= settingBtnX && mouseX <= settingBtnX + settingBtnW &&
-      mouseY >= settingBtnY && mouseY <= settingBtnY + settingBtnH
-    ) {
-      if (typeof switchToSettingsScreen === "function") {
-        switchToSettingsScreen();
-      }
-      return;
-    }
-
-
-    // --- sit here 버튼 ---
-    if (this.isSitButtonHovered) {
-      this.isSitButtonPressed = true; // 버튼 눌림 상태 활성화
-      this.sitButtonPressTime = millis();
-      
-      // 정답 확인 로직
-      console.log("--- mousePressed Debug Info (Sit Here Button) ---");
-      console.log("Hovered NPC Index:", this.hoveredSitNpcIndex);
-      console.log("Correct NPC Index (instance):", this.correctNpcIndex);
-      console.log("Comparison result (hovered === correct):", this.hoveredSitNpcIndex === this.correctNpcIndex);
-
-      if (this.hoveredSitNpcIndex === this.correctNpcIndex) {
-        // --- 정답 ---
-        this.resultOverlayType = 'success';
-        this.npcStandingIndex = this.correctNpcIndex;
-        this.npcStandTriggerTime = millis();
-        this.playerShouldSit = false; // 일단 false, 2초 뒤 true로
-        this.targetSeatX = this.npcPositions[this.correctNpcIndex].x;
-        this.playerDir = "right"; // 일단 방향 유지
-        // 성공 스크립트 실행
-        this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {
-          console.log("Success script finished.");
-        });
-        // 2초 뒤에 플레이어 착석 처리 (추가 이동 없이)
-        setTimeout(() => {
-          this.playerDir = "sit";
-          this.playerShouldSit = true;
-        }, 4000);
-        console.log("Decision: SUCCESS");
-      } else {
-        // --- 오답 ---
-        this.resultOverlayType = 'fail';
-        this.resultOverlayStartTime = millis(); // 실패 오버레이는 즉시 표시
-        // 실패 시에도 정답 NPC가 일어나 나가도록 처리
-        this.npcStandingIndex = this.correctNpcIndex;
-        this.npcStandTriggerTime = millis();
-        this.playerShouldSit = false; // 플레이어는 움직이지 않음
-        this.targetSeatX = null; 
-        
-         // 실패 스크립트 실행
-        this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {
-        });
-      }
-      return;
-    }
+mousePressed() {
+  // ✅ 0) UI 버튼은 항상 최우선 (스크립트/결과 화면 중에도 클릭 허용)
+  if (
+    stopBtnX !== undefined &&
+    mouseX >= stopBtnX && mouseX <= stopBtnX + stopBtnW &&
+    mouseY >= stopBtnY && mouseY <= stopBtnY + stopBtnH
+  ) {
+    if (typeof switchToStopScreen === "function") switchToStopScreen();
+    return;
   }
+
+  if (
+    quitBtnX !== undefined &&
+    mouseX >= quitBtnX && mouseX <= quitBtnX + quitBtnW &&
+    mouseY >= quitBtnY && mouseY <= quitBtnY + quitBtnH
+  ) {
+    if (typeof switchToQuitScreen === "function") switchToQuitScreen();
+    return;
+  }
+
+  if (
+    settingBtnX !== undefined &&
+    mouseX >= settingBtnX && mouseX <= settingBtnX + settingBtnW &&
+    mouseY >= settingBtnY && mouseY <= settingBtnY + settingBtnH
+  ) {
+    if (typeof switchToSettingsScreen === "function") switchToSettingsScreen();
+    return;
+  }
+
+  // ✅ 1) 여기부터는 "게임 클릭" (게임 시작 전/결과 오버레이 중이면 무시)
+  if (!this.gameStarted) return;
+  if (this.resultOverlayType) return;
+
+  // ✅ 2) sit here 버튼 처리
+  if (!this.isSitButtonHovered) return;
+
+  this.isSitButtonPressed = true;
+  this.sitButtonPressTime = millis();
+
+  console.log("--- Sit Here Debug ---");
+  console.log("Hovered NPC:", this.hoveredSitNpcIndex, "Correct NPC:", this.correctNpcIndex);
+
+  const isCorrect = (this.hoveredSitNpcIndex === this.correctNpcIndex);
+
+  if (isCorrect) {
+    // ===== SUCCESS =====
+    this.resultOverlayType = "success";
+
+    // ✅✅✅ 점수 1회만 증가 (히스토리에서 _scoreAdded 초기화가 삭제돼도 여기서 안전하게 복구)
+    if (typeof this._scoreAdded === "undefined") this._scoreAdded = false;
+
+    if (!this._scoreAdded) {
+      this._scoreAdded = true;
+
+      // 1) 숫자 점수 (currentScoreIndex / scoreCount 둘 중 존재하는 걸 올림)
+      if (typeof currentScoreIndex !== "undefined") {
+        currentScoreIndex = Math.min(currentScoreIndex + 1, 3);
+      } else if (typeof scoreCount !== "undefined") {
+        scoreCount = Math.min(scoreCount + 1, 3);
+      }
+
+      // 2) 전역 currentScoreIndex도 맞춰둠(리워드/다른 화면이 이걸 볼 수도 있어서)
+      const idx =
+        (typeof currentScoreIndex !== "undefined" ? currentScoreIndex :
+         typeof scoreCount !== "undefined" ? scoreCount : 0);
+
+      globalThis.currentScoreIndex = idx;
+
+      // 3) 점수 이미지도 동기화 (scoreImages/scoreImgs 둘 다 대응)
+      const arr =
+        (typeof scoreImages !== "undefined" && Array.isArray(scoreImages) ? scoreImages : null) ||
+        (typeof scoreImgs !== "undefined" && Array.isArray(scoreImgs) ? scoreImgs : null) ||
+        null;
+
+      if (arr && arr[idx]) {
+        if (typeof gameScore !== "undefined") gameScore = arr[idx];
+        globalThis.gameScore = arr[idx];
+      }
+
+      console.log("[SCORE UP]", idx);
+    }
+
+    // 성공 시 NPC/플레이어 연출 (네 기존 로직 유지)
+    this.npcStandingIndex = this.correctNpcIndex;
+    this.npcStandTriggerTime = millis();
+    this.playerShouldSit = false;
+    this.targetSeatX = this.npcPositions[this.correctNpcIndex].x;
+    this.playerDir = "right";
+
+    this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {
+      console.log("Success script finished.");
+    });
+
+    setTimeout(() => {
+      this.playerDir = "sit";
+      this.playerShouldSit = true;
+    }, 4000);
+
+  } else {
+    // ===== FAIL =====
+    this.resultOverlayType = "fail";
+    this.resultOverlayStartTime = millis();
+
+    this.npcStandingIndex = this.correctNpcIndex;
+    this.npcStandTriggerTime = millis();
+    this.playerShouldSit = false;
+    this.targetSeatX = null;
+
+    this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {});
+  }
+}
+
 }

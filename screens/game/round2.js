@@ -143,6 +143,8 @@ if (round2Scripts &&
     if (scriptBgSound && scriptBgSound.isLoaded() && !scriptBgSound.isPlaying()) {
       scriptBgSound.loop();
     }
+    this._scoreAdded = false;
+
   }
 
   setup() {
@@ -253,7 +255,45 @@ if (playerCenterX >= seatLeft && playerCenterX <= seatRight) {
   this.round2Result = "success";
 
   // ✅ 점수 +1 (Round2 성공 시 1회만)
-  if (typeof addSuccessScoreOnce === "function") addSuccessScoreOnce(this);
+ // ✅✅✅ Round2 점수 +1을 "확실히" (전역 함수 의존 X, 이미지까지 동기화)
+if (typeof this._scoreAdded === "undefined") this._scoreAdded = false;
+
+if (!this._scoreAdded) {
+  this._scoreAdded = true;
+
+  let idx = 0;
+
+  // 1) 현재 값 읽기
+  if (typeof globalThis.currentScoreIndex === "number" && Number.isFinite(globalThis.currentScoreIndex)) {
+    idx = globalThis.currentScoreIndex;
+  } else if (typeof currentScoreIndex !== "undefined" && typeof currentScoreIndex === "number") {
+    idx = currentScoreIndex;
+  } else if (typeof scoreCount !== "undefined" && typeof scoreCount === "number") {
+    idx = scoreCount;
+  }
+
+  // 2) +1 (0~3)
+  idx = Math.min(3, Math.max(0, idx + 1));
+
+  // 3) 숫자 상태 동기화
+  globalThis.currentScoreIndex = idx;
+  if (typeof currentScoreIndex !== "undefined") currentScoreIndex = idx;
+  if (typeof scoreCount !== "undefined") scoreCount = idx;
+
+  // 4) ✅ drawUi가 이미지로 점수 추론해서 덮어쓰는 구조라 gameScore도 같이 바꿔야 함
+  const arr =
+    (typeof scoreImages !== "undefined" && Array.isArray(scoreImages) ? scoreImages : null) ||
+    (typeof scoreImgs !== "undefined" && Array.isArray(scoreImgs) ? scoreImgs : null) ||
+    null;
+
+  if (arr && arr[idx]) {
+    if (typeof gameScore !== "undefined") gameScore = arr[idx];
+    globalThis.gameScore = arr[idx];
+  }
+
+  console.log("[Round2 SCORE UP] ->", idx);
+}
+
   // (구버전 함수명이라면 아래로 교체)
   // if (typeof registerSuccessOnce === "function") registerSuccessOnce();
 

@@ -398,6 +398,8 @@ class Round3 {
     this.correctNpcStandStartTime = null;
     this.correctNpcHasLeft = false;
     this.correctNpcHideInDrawNpcs = false;
+    this._scoreAdded = false;
+
 
     this.stage1ReturnTime = null;
 
@@ -571,16 +573,50 @@ class Round3 {
 
     // ✅✅✅ [핵심] success가 뜨는 순간부터 빌런(잠실 서있는 캐릭터) 완전 동결
     if (isCorrect) {
-      if (typeof addSuccessScoreOnce === "function") {
-        addSuccessScoreOnce(this);
-      }
-      this.freezeVillainOnSuccess = true;
-      this.frozenVillainOffsetX = this.standingOffsetX;
-      this.isEyeLightningActive = false;
-      this.isLightningEffectActive = false;
+  // ✅ Round3에서 점수 확실히 올리기(전역 함수 의존 X)
+  if (typeof this._scoreAdded === "undefined") this._scoreAdded = false;
 
-      this.startCorrectNpcExitSequence();
+  if (!this._scoreAdded) {
+    this._scoreAdded = true;
+
+    let idx = 0;
+    if (typeof globalThis.currentScoreIndex === "number" && Number.isFinite(globalThis.currentScoreIndex)) {
+      idx = globalThis.currentScoreIndex;
+    } else if (typeof currentScoreIndex !== "undefined" && typeof currentScoreIndex === "number") {
+      idx = currentScoreIndex;
+    } else if (typeof scoreCount !== "undefined" && typeof scoreCount === "number") {
+      idx = scoreCount;
     }
+
+    idx = Math.min(3, Math.max(0, idx + 1));
+
+    globalThis.currentScoreIndex = idx;
+    if (typeof currentScoreIndex !== "undefined") currentScoreIndex = idx;
+    if (typeof scoreCount !== "undefined") scoreCount = idx;
+
+    // ✅ drawUi가 이미지로 점수 추론하면 gameScore도 같이 바꿔야 함
+    const arr =
+      (typeof scoreImages !== "undefined" && Array.isArray(scoreImages) ? scoreImages : null) ||
+      (typeof scoreImgs !== "undefined" && Array.isArray(scoreImgs) ? scoreImgs : null) ||
+      null;
+
+    if (arr && arr[idx]) {
+      if (typeof gameScore !== "undefined") gameScore = arr[idx];
+      globalThis.gameScore = arr[idx];
+    }
+
+    console.log("[Round3 SCORE UP] ->", idx);
+  }
+
+  // ✅ 네 기존 성공 연출 그대로
+  this.freezeVillainOnSuccess = true;
+  this.frozenVillainOffsetX = this.standingOffsetX;
+  this.isEyeLightningActive = false;
+  this.isLightningEffectActive = false;
+
+  this.startCorrectNpcExitSequence();
+}
+
 
     try {
       const key = isCorrect ? "round3_success" : "round3_fail";
