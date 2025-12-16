@@ -268,11 +268,10 @@ class Round3 {
       }
     }
 
-    this.jamsilStandingImg = loadImage("assets/userCharacter/유저-3 뒷모습.png");
+    this.jamsilStandingImg = loadImage("assets/npcCharacter/standing/빌런뒷모습.png");
     this.eyeLightningImg = loadImage("assets/buttons/번개 눈빛.png");
     this.lightningEffectImg = loadImage("assets/buttons/번개 효과.png");
-    this.gangnamStandingImg = loadImage("assets/npcChracter/standing/강남_직장인_스탠딩.png");
-
+    this.gangnamStandingImg = loadImage("assets/npcCharacter/standing/빌런뒷모습.png");
     // ✅✅✅ 여기서 로드해야 this.rewardImgs가 제대로 채워짐
     this.rewardImgs[0] = loadImage("assets/result/리워드 0.png");
     this.rewardImgs[1] = loadImage("assets/result/리워드 1.png");
@@ -702,6 +701,12 @@ drawRewardOverlayIfNeeded() {
     text(`Reward image not loaded: index ${this.rewardIndex}`, width/2, height/2);
   }
 
+    // 하단 안내 텍스트 추가
+    fill(255);
+    textAlign(CENTER, BOTTOM);
+    textSize(32);
+    text('다시 [ENTER]을 눌러 시작화면으로 돌아가세요', width / 2, height - 60);
+
   pop();
 }
 
@@ -946,7 +951,16 @@ drawRewardOverlayIfNeeded() {
   }
 
   keyPressed() {
-    if (this.showRewardScreen) return false;
+    // 엔딩 리워드 화면에서 ENTER 입력 시 시작화면으로 이동
+    if (this.showRewardScreen) {
+      if (keyCode === ENTER) {
+        if (typeof switchToStartScene === "function") {
+          switchToStartScene();
+        }
+        return true;
+      }
+      return false;
+    }
 
     if (this.introState === "playing" && this.introScriptPlayer) {
       if (keyCode === 32) this.introScriptPlayer.next();

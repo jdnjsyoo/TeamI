@@ -62,6 +62,12 @@ function switchToQuitScreen() {
   if (typeof setup === "function") setup();
 }
 
+function switchToStartScene() {
+  resetGameState();
+  applyScreen("startScreen");
+  if (typeof setup === "function") setup();
+}
+
 function resetScoreboard() {
   scoreCount = 0;
 

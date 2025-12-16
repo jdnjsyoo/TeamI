@@ -238,10 +238,10 @@ if (instance && instance.gameStarted && !instance.resultOverlayType) {
 
     // ======= 좌측 상단 게임 점수판 (스크린 좌표, 스케일/스크롤 영향 X) =======
    function drawScoreboardUI() {
-  const boxX = 20;
-  const boxY = 7;
-  const boxW = 160;
-  const boxH = 115;
+  const boxX = 23;
+  const boxY = -5;
+  const boxW = 180;
+  const boxH = 123;
 
   // ✅ 현재 점수판 이미지 (네 코드 그대로)
   const img = (typeof gameScore !== "undefined") ? gameScore : null;
