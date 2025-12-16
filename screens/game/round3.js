@@ -268,7 +268,7 @@ class Round3 {
       }
     }
 
-    this.jamsilStandingImg = loadImage("assets/npcCharacter/standing/빌런뒷모습.png");
+    this.jamsilStandingImg = loadImage("assets/npcChracter/standing/빌런뒷모습.png");
     this.eyeLightningImg = loadImage("assets/buttons/번개 눈빛.png");
     this.lightningEffectImg = loadImage("assets/buttons/번개 효과.png");
     this.gangnamStandingImg = loadImage("assets/npcCharacter/standing/빌런뒷모습.png");
