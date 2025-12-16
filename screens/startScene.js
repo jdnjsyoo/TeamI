@@ -8,6 +8,7 @@ let startState = "menu"; // "menu", "howto", "settings"
 // 이미지 변수
 let imgStartBg; // 움직이는 뒷배경
 let imgStartFg; // 고정된 앞화면
+let imgGameLogo; // 게임 로고
 
 // ✅ [변경] 플레이 방법 이미지 배열로 변경
 let howtoImages = []; 
@@ -39,6 +40,7 @@ let btnNext = { x: 964, y: 434, r: 40 };
 function startScreenPreload() {
   imgStartBg = loadImage("assets/start/startbg1.png"); 
   imgStartFg = loadImage("assets/start/startpage1.png");
+  imgGameLogo = loadImage("assets/start/gamelogo 1.png");
 
   // ✅ [변경] 플레이 방법 이미지 4장 불러오기 (tu1 ~ tu4)
   // 파일명이 tu1.png, tu2.png ... 형식이어야 합니다.
@@ -93,6 +95,13 @@ function drawStartMenu() {
   bgX -= BG_SPEED;
   if (bgX <= -width) {
     bgX = 0;
+  }
+
+  // 게임 로고 상단 중앙에 배치
+  if (imgGameLogo) {
+    const logoW = 600;
+    const logoH = (imgGameLogo.height / imgGameLogo.width) * logoW;
+    image(imgGameLogo, width / 2 - logoW / 2, 70, logoW, logoH);
   }
 
   image(imgStartFg, 0, 0, width, height);
