@@ -357,7 +357,7 @@ const camWorldX = -(scrollX - camPad2);
 const parallax = 0.25;
 
 const envScale = 1.25;   // ✅ 창밖 풍경 확대 (1.1~1.6 추천)
-const envYOffset = 50;  // 필요하면 위로
+const envYOffset = 40;  // 필요하면 위로
 
 push();
 resetMatrix();
