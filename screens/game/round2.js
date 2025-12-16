@@ -352,14 +352,25 @@ scrollY = constrain(scrollY, -backgr.height + viewH + camPad, camPad);
     // =======================
 // ✅ 창밖 배경(환경) 패럴랙스: 카메라 따라 움직이게
 // =======================
-const camPad2 = 50; // translate에서 쓰는 -50과 같은 값
-const camWorldX = -(scrollX - camPad2);   // 카메라의 월드 X 위치(대략)
-const parallax = 0.25;                  // 0.15~0.35 추천 (작을수록 천천히 흐름)
+const camPad2 = 50;
+const camWorldX = -(scrollX - camPad2);
+const parallax = 0.25;
+
+const envScale = 1.25;   // ✅ 창밖 풍경 확대 (1.1~1.6 추천)
+const envYOffset = 50;  // 필요하면 위로
 
 push();
-resetMatrix();                           // ✅ 스케일/카메라 영향 제거 -> 화면 기준으로 그림
-translate(-camWorldX * parallax * stageScale, 0);  // ✅ 화면 픽셀 단위로 살짝 이동
-this.environment.display(false, 2);      // ✅ 이제 '멈추지 않고' 부드럽게 따라옴
+resetMatrix();
+
+// ✅ 화면 중심 기준으로 확대 (안 그러면 좌상단 기준으로 커져서 위치가 이상해질 수 있음)
+translate(width / 2, height / 2);
+scale(envScale);
+translate(-width / 2, -height / 2);
+
+// ✅ 그 다음에 패럴랙스 + y오프셋 적용
+translate(-camWorldX * parallax * stageScale, envYOffset);
+
+this.environment.display(false, 2);
 pop();
 
     push();
