@@ -175,6 +175,15 @@ function drawArrowBtn(btn, direction) {
 // =====================
 // 4) 입력 처리
 // =====================
+
+// 전역 캔버스 스크린샷 기능 (c 키)
+function globalKeyPressedForScreenshot() {
+  if (key === 'c' || key === 'C') {
+    saveCanvas('screenshot', 'png');
+    return true;
+  }
+  return false;
+}
 function startScreenMousePressed() {
   // 메뉴 화면
   if (startState === "menu") {
@@ -238,6 +247,9 @@ function startScreenMouseReleased() {
 }
 
 function startScreenKeyPressed() {
+  // 전역 스크린샷 기능
+  if (globalKeyPressedForScreenshot()) return;
+
   if (keyCode === ESCAPE) {
     if (startState === "settings") {
       closeSettingsScreen();
