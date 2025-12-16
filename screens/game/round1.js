@@ -171,6 +171,12 @@ class Round1 {
       }
     });
      this._scoreAdded = false; // ⭐ SUCCESS 중복 방지
+     // Round1 constructor 안 맨 아래쯤
+this.sitButtonVisibleThisFrame = false; // 이번 프레임에 버튼을 "그렸는지"
+this.sitButtonEverVisible = false;      // Stage1 복귀 이후 버튼이 1번이라도 떴는지
+this.stage1ReturnTime = null;           // Stage1 복귀 시각
+this.autoFailTriggered = false;         // 중복 fail 방지
+
   }
 
   setDebugColor(c) {
@@ -339,6 +345,34 @@ class Round1 {
     }
     drawUi(this);
 
+    // ✅ Stage1 복귀 후 sit here 버튼이 일정 시간 내에 한번도 안 뜨면 자동 fail
+if (
+  this.gameStarted &&
+  this.hasReturnedFromStage2 &&
+  this.stage === 1 &&
+  !this.resultOverlayType &&
+  this.stage1ReturnTime !== null &&
+  !this.autoFailTriggered
+) {
+  const GRACE = 1500; // 1.5초 정도 여유 (원하면 1000~2500 조절)
+  if ((millis() - this.stage1ReturnTime) > GRACE && !this.sitButtonEverVisible) {
+    this.autoFailTriggered = true;
+
+    // FAIL 처리 (네 fail 로직 재사용)
+    this.resultOverlayType = "fail";
+    this.resultOverlayStartTime = millis();
+
+    this.npcStandingIndex = this.correctNpcIndex;
+    this.npcStandTriggerTime = millis();
+    this.playerShouldSit = false;
+    this.targetSeatX = null;
+
+    this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_fail, () => {});
+    console.log("[AUTO FAIL] sit here button never appeared after returning to Stage1");
+  }
+}
+
+
     if (this.gameStarted && this.stage === 2 && this.stage2StartTime !== null && !this.isStationImgActive) {
       if (millis() - this.stage2StartTime >= stage2DurationRound1) {
         this.isStationImgActive = true;
@@ -347,6 +381,9 @@ class Round1 {
         this.stage2StartTime = null;
         this.hasReturnedFromStage2 = true; // timeout으로 돌아왔음을 표시
         this.playerDir = "back"; // 뒷모습으로 변경
+          this.stage1ReturnTime = millis();
+  this.sitButtonEverVisible = false;
+  this.autoFailTriggered = false;
         // Stage 2 타이머가 끝나서 Stage 1으로 돌아올 때 음악 변경
           if (roundPlayingSound && roundPlayingSound.isLoaded() && roundPlayingSound.isPlaying()) {
             roundPlayingSound.stop();
@@ -422,7 +459,11 @@ class Round1 {
           this.stage = 1;
           this.selectedNpcIndex = this.highlightedNpcIndex;
           this.stage2StartTime = null;
-          this.hasReturnedFromStage2 = true; // 스페이스바로 돌아왔음을 표시          this.playerDir = "back"; // 뒷모습으로 변경          // Stage 2에서 Stage 1으로 돌아올 때 음악 변경
+          this.hasReturnedFromStage2 = true; // 스페이스바로 돌아왔음을 표시  
+          //         this.playerDir = "back"; // 뒷모습으로 변경    
+           this.stage1ReturnTime = millis();
+  this.sitButtonEverVisible = false;
+  this.autoFailTriggered = false;
           if (roundPlayingSound && roundPlayingSound.isPlaying()) {
               roundPlayingSound.stop();
           }
