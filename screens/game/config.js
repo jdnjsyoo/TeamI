@@ -15,7 +15,7 @@ const seatSpacing = 200; // 좌석 간 간격
 const seatBaseY = 550; // 좌석의 Y축 기본 위치 (바닥)
 
 // 스테이지 2 타이머 (10초)
-const stage2Duration = 10000;
+const stage2Duration = 30000;
 
 // 속도 관련 (플레이어, 배경 스크롤 등)
 let speed = 5; // 현재 플레이어 이동 속도 (변동 가능)

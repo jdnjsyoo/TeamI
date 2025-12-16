@@ -525,7 +525,7 @@ mousePressed() {
     this.npcStandTriggerTime = millis();
     this.playerShouldSit = false;
     this.targetSeatX = this.npcPositions[this.correctNpcIndex].x;
-    this.playerDir = "right";
+    this.playerDir = "back"; // sit here 버튼을 눌렀을 때 뒷모습으로 변경
 
     this.resultScriptPlayer = new ScriptPlayer(round1Scripts.round1_success, () => {
       console.log("Success script finished.");

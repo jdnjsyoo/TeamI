@@ -102,7 +102,7 @@ let showPressEnter = true
 let timeBarBase;
 let timeBar;
 let timerWidth;
-const stage2Duration = 10000; // 10 seconds
+const stage2Duration = 30000; // 30 seconds
 let timerStartTime;
 
 let dungGeunMoFont; // 모든 라운드에서 사용할 폰트
