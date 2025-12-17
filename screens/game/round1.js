@@ -244,7 +244,21 @@ this.autoFailTriggered = false;         // 중복 fail 방지
       this.y = backgr ? backgr.height - 80 : groundY;
 
       // Use the Environment class to draw the background
-      this.environment.display(this.isStationImgActive, this.stage);
+      // ✅ "되돌아온 stage1"이면 창밖을 stationImg로 고정
+const showStationOutside =
+  this.gameStarted &&
+  this.hasReturnedFromStage2 &&   // "되돌아온" stage1 조건
+  this.stage === 1 &&
+  this.isStationImgActive &&
+  stationImg;                     // 로드돼있을 때만
+
+if (showStationOutside) {
+  image(stationImg, 0, 0, width, height);  // ✅ 창밖을 역 이미지로 덮기
+} else {
+  // ✅ 그 외에는 기존 창밖(도시/구름) 로직 그대로
+  this.environment.display(false, this.stage);
+}
+
 
       handlePlayerMovement(this);
 

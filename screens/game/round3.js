@@ -738,7 +738,20 @@ drawRewardOverlayIfNeeded() {
       }
     }
 
-    this.environment.display(this.isStationImgActive, this.stage);
+    // ✅ "되돌아온 stage1"이면 창밖을 stationImg로 바꾸기 (Round3 전용)
+const returnedStage1 =
+  this.gameStarted &&
+  this.stage === 1 &&
+  this.isStationImgActive &&     // Stage2 끝나거나 선택 후 true로 바뀜
+  stationImg;
+
+if (returnedStage1) {
+  image(stationImg, 0, 0, width, height);
+} else {
+  // 기존 창밖(도시/구름) 유지
+  this.environment.display(false, this.stage);
+}
+
 
     updateNpcAnimations(this);
 
