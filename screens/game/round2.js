@@ -99,6 +99,8 @@ this.resultOverlayStartTime = null;
 // ----- 스크립트 관련 상태 -----
 this.resultScriptPlayer = null;
 this.introScriptPlayer = null;
+this.playingScriptPlayer = null;
+
 
 // 기본값: 인트로 없이 바로 게임 시작하는 상태
 this.showPressEnter = false;
@@ -164,12 +166,6 @@ if (round2Scripts &&
   draw() {
     background(0);
 
-     // 🔽 이제 여기서는 return 안 함
-  if (!this.gameStarted && this.introState === "finished") {
-    if (this.introScriptPlayer) {
-      this.introScriptPlayer.draw(); // 나중에 위에 오버레이로 다시 옮겨도 됨
-    }
-  }
 
     const worldGroundY = backgr ? backgr.height - 80 : height - 50;
 
@@ -459,17 +455,53 @@ this.playerDir = savedDir;
     // Round1과 같은 UI (상단 바, 오버레이 등)
     drawUi(this);
 
-     if (this.introScriptPlayer) {
-    if (this.introState === "playing") {
-      this.introScriptPlayer.draw();  // 인트로 진행 중
-    } else if (!this.gameStarted && this.introState === "finished") {
-      this.introScriptPlayer.draw();  // 마지막 문장 유지
+    // =======================
+// ✅ Round2 HUD 스크립트 (항상 화면 고정)
+// =======================
+// =======================
+// ✅ Round2 HUD 스크립트 (항상 화면 고정)
+// =======================
+push();
+resetMatrix();
 
-  
-      
-    }
+// 1) 늦게라도 1회 생성 + ⭐️ 생성 직후 첫 줄 강제 표시
+if (
+  !this.playingScriptPlayer &&
+  round2Scripts &&
+  round2Scripts.round2_playing &&
+  typeof ScriptPlayer === "function"
+) {
+  this.playingScriptPlayer = new ScriptPlayer(round2Scripts.round2_playing);
+
+  // ⭐️ 핵심: ScriptPlayer가 next() 해야 0번 줄이 뜨는 구조면,
+  // 생성하자마자 한 번 자동 호출해서 "첫 줄 고정" 상태로 만들어줌
+  if (this.playingScriptPlayer && typeof this.playingScriptPlayer.next === "function") {
+    this.playingScriptPlayer.next();
   }
+}
+
+// 2) 라운드 끝나기 전까지 항상 표시 (한 줄 고정)
+if (!this.round2Finished && this.playingScriptPlayer) {
+  this.playingScriptPlayer.draw();
+}
+
+// 3) 인트로는 안내문 위에
+if (this.introScriptPlayer) {
+  if (this.introState === "playing") {
+    this.introScriptPlayer.draw();
+  } else if (!this.gameStarted && this.introState === "finished") {
+    this.introScriptPlayer.draw();
   }
+}
+
+// 4) 결과 스크립트가 있으면 최상단
+if (this.resultScriptPlayer && !this.resultScriptPlayer.isFinished()) {
+  this.resultScriptPlayer.draw();
+}
+
+pop();
+
+ }
 
   // ==============
   // 이동 로직
@@ -609,6 +641,8 @@ if (key === 's' || key === 'S') {
 
       return false;
     }
+
+
 
     // 3) 결과 스크립트(success/fail) 재생 중이면 → 다음 줄
     if (this.resultScriptPlayer && !this.resultScriptPlayer.isFinished()) {
