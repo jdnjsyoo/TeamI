@@ -155,5 +155,13 @@ function drawNPC(round, npcImg, baseX, baseY, index, isHighlighted, worldMouseX,
 
         let imgToDraw = isCurrentlyHovered ? sitHereHoverImg : sitHereImg;
         image(imgToDraw, sitX, sitY, sitW, sitH);
+        
+        // ✅ 버튼이 실제로 화면에 그려졌음을 표시
+        if (round.sitButtonVisibleThisFrame !== undefined) {
+            round.sitButtonVisibleThisFrame = true;
+        }
+        if (round.sitButtonEverVisible !== undefined) {
+            round.sitButtonEverVisible = true;
+        }
     }
 }

@@ -14,7 +14,7 @@ const startX = 300; // 첫 번째 좌석의 X 시작 위치
 const seatSpacing = 200; // 좌석 간 간격
 const seatBaseY = 550; // 좌석의 Y축 기본 위치 (바닥)
 
-// 스테이지 2 타이머 (10초)
+// 스테이지 2 타이머 (30초)
 const stage2Duration = 30000;
 
 // 속도 관련 (플레이어, 배경 스크롤 등)
